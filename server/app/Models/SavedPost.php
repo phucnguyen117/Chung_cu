@@ -7,15 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class SavedPost extends Model
 {
     protected $table = 'saved_posts';
-    protected $fillable = ['user_id', 'post_id'];
+    
+    public $timestamps = false;
 
-    public function user()
-    {
+    protected $fillable = ['user_id', 'post_id', 'created_at'];
+
+    public function user() {
         return $this->belongsTo(User::class);
     }
 
-    public function post()
-    {
+    public function post() {
         return $this->belongsTo(Post::class);
     }
 }
+
