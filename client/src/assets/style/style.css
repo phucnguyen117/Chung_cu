@@ -1,4 +1,6 @@
-@import  './pages/Home.css';
+@import  './pages/Homes.css';
+@import  './pages/Rooms.css';
+@import  './pages/Houses.css';
 /* Reset & base */
 * {
   box-sizing: border-box;
