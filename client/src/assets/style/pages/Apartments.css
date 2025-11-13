@@ -1,0 +1,101 @@
+/* ================
+   LAYOUT 2 CỘT
+   ================ */
+.re-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px; /* trái linh hoạt, phải 320px */
+  gap: 18px;
+  align-items: start;
+  padding: 16px 0;
+}
+
+.re-main { min-width: 0; } /* fix overflow khi có grid */
+.re-aside {   top: 84px; }
+
+/* ================
+   CARD LỌC BÊN PHẢI
+   ================ */
+.re-filtercard {
+    
+    margin-top: 70px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+}
+
+.re-filtercard h3 {
+  margin: 0 0 10px;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--c-text);
+}
+
+.re-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.re-field label {
+  font-size: 13px;
+  color: var(--c-muted);
+}
+
+.re-field select,
+.re-field .re-input input {
+  min-height: var(--h-field);
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #111;
+}
+
+.re-field .re-input { padding: 0; border: 0; } /* tận dụng .re-input khung */
+.re-field .re-input input { border: 1px solid var(--c-border); border-radius: 10px; }
+
+.re-checklist {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.re-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #111;
+}
+
+.re-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.re-filtercard__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Responsive: dưới 960px thì aside xuống dưới */
+@media (max-width: 960px) {
+  .re-layout { grid-template-columns: 1fr; }
+  .re-aside { position: static; }
+}
+
+/* (SỬA) selector hero đúng: phần này thay cho .container .re-hero__inner */
+.re-hero__inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}

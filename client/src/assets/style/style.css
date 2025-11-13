@@ -1,6 +1,8 @@
-@import  './pages/Homes.css';
-@import  './pages/Rooms.css';
-@import  './pages/Houses.css';
+@import './pages/Homes.css';
+@import './pages/Rooms.css';
+@import './pages/Houses.css';
+@import './pages/Apartments.css';
+
 /* Reset & base */
 * {
   box-sizing: border-box;
@@ -24,7 +26,7 @@ body {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 5px 16px;
 }
 
 .container--main {
@@ -62,31 +64,40 @@ body {
   font-weight: 600;
   font-size: 20px;
 }
-.brand img{
-    height: 60px;
+
+.brand img {
+  height: 60px;
   width: 60px;
-  
+
 }
+
 .nav {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+
 }
 
 .nav__link {
   text-decoration: none;
-  color: #000000;
+  color: #373737;
   padding: 8px 10px;
   border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
 }
+
 
 .nav__link:hover {
   background: #c9c9c9;
+ 
 }
+
 
 .nav__link.is-active {
   background: #fff;
   color: #000000;
+  text-decoration: underline;
 }
 
 .site-header__actions {
@@ -94,7 +105,6 @@ body {
   gap: 8px;
 }
 
-/* Buttons & Inputs */
 .btn {
   display: inline-block;
   padding: 8px 12px;
@@ -111,14 +121,20 @@ body {
 }
 
 .btn--dark {
-  background: #111;
-  color: #fff;
+  background: #ffffff;
+  color: #000000;
+  border-color: #000000;
+}
+
+.btn--dark:hover {
+  color: #111111;
+  text-decoration: underline 1px black;
+  background: #f8fafc;
 }
 
 .btn--ghost {
-  background: #fff;
-  color: #111;
-  border-color: #e5e7eb;
+  color: #111111;
+  text-decoration: underline 1px black;
 }
 
 .btn--ghost:hover {
