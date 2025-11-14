@@ -10,6 +10,8 @@ class EnvironmentFeature extends Model
     
     protected $fillable = ['slug', 'name'];
 
+    public $timestamps = false;
+
     public function posts() {
         return $this->belongsToMany(Post::class, 'environment_post');
     }

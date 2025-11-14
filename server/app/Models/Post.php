@@ -39,11 +39,11 @@ class Post extends Model
     }
 
     public function amenities() {
-        return $this->belongsToMany(Amenity::class, 'amenity_post');
+        return $this->belongsToMany(Amenity::class, 'amenity_post', 'post_id', 'amenity_id');
     }
 
-    public function environments() {
-        return $this->belongsToMany(EnvironmentFeature::class, 'environment_post');
+    public function environmentFeatures() {
+        return $this->belongsToMany(EnvironmentFeature::class, 'environment_post', 'post_id', 'environment_id');
     }
 
     public function reviews() {
