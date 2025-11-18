@@ -10,6 +10,7 @@ use App\Http\Controllers\PostAmenityController;
 use App\Http\Controllers\EnvironmentFeatureController;
 use App\Http\Controllers\PostEnvironmentController;
 use App\Http\Controllers\SavedPostController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,6 +31,8 @@ Route::get('/categories/{id}/posts', [CategoryController::class, 'getPostsByCate
 
 Route::get('/amenities', [AmenityController::class, 'index']);
 Route::get('/environment-features', [EnvironmentFeatureController::class, 'index']);
+
+Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Auth (all)
@@ -90,6 +93,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/saved-posts', [SavedPostController::class, 'index']);
     Route::post('/saved-posts/{postId}', [SavedPostController::class, 'save']);
     Route::delete('/saved-posts/{postId}', [SavedPostController::class, 'unsave']);
+
+    // Reviews (all)
+    Route::post('/posts/{postId}/reviews', [ReviewController::class, 'store']);
+    Route::put('/reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 });
 
 
