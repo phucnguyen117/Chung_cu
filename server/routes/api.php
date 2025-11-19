@@ -11,6 +11,7 @@ use App\Http\Controllers\EnvironmentFeatureController;
 use App\Http\Controllers\PostEnvironmentController;
 use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\AppointmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -98,6 +99,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{postId}/reviews', [ReviewController::class, 'store']);
     Route::put('/reviews/{id}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Appointments (admin & lessor/ get all)
+    Route::post('/appointments', [AppointmentController::class, 'store']);
+    Route::patch('/appointments/{id}/accept', [AppointmentController::class, 'accept']);
+    Route::patch('/appointments/{id}/decline', [AppointmentController::class, 'decline']);
+    Route::delete('/appointments/{id}', [AppointmentController::class, 'cancel']);
+    Route::get('/appointments/my', [AppointmentController::class, 'myAppointments']);
+    Route::get('/appointments/owner', [AppointmentController::class, 'ownerAppointments']);
+    Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
 });
 
 

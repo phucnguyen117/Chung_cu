@@ -35,4 +35,30 @@ class User extends Authenticatable
     public function rentalContracts() {
         return $this->hasMany(RentalContract::class);
     }
+    
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function receivedMessages()
+    {
+        return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    public function appointmentsAsRenter()
+    {
+        return $this->hasMany(Appointment::class, 'renter_id');
+    }
+
+    public function appointmentsAsOwner()
+    {
+        return $this->hasMany(Appointment::class, 'owner_id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
 }
