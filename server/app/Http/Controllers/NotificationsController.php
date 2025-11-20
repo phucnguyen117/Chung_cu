@@ -7,10 +7,7 @@ use Illuminate\Http\Request;
 
 class NotificationsController extends Controller
 {
-    /**
-     * Lấy danh sách thông báo của người dùng
-     * GET /api/notifications
-     */
+    // GET /api/notifications (lấy danh sách thông báo)
     public function index()
     {
         $notifications = Notification::where('user_id', auth()->id())
@@ -21,10 +18,7 @@ class NotificationsController extends Controller
     }
 
 
-    /**
-     * Đánh dấu 1 thông báo là đã đọc
-     * POST /api/notifications/read/{id}
-     */
+    // POST /api/notifications/read/{id} (Đánh dấu 1 thông báo là đã đọc)
     public function markAsRead($id)
     {
         $noti = Notification::where('user_id', auth()->id())->findOrFail($id);
@@ -35,10 +29,7 @@ class NotificationsController extends Controller
     }
 
 
-    /**
-     * Đánh dấu tất cả thông báo là đã đọc
-     * POST /api/notifications/read-all
-     */
+    // POST /api/notifications/read-all (Đánh dấu tất cả thông báo là đã đọc)
     public function markAll()
     {
         Notification::where('user_id', auth()->id())
@@ -48,10 +39,7 @@ class NotificationsController extends Controller
     }
 
 
-    /**
-     * Đếm số thông báo chưa đọc
-     * GET /api/notifications/unread-count
-     */
+    // GET /api/notifications/unread-count (Đếm số thông báo chưa đọc)
     public function unreadCount()
     {
         $count = Notification::where('user_id', auth()->id())

@@ -106,12 +106,4 @@ class AuthController extends Controller
         ]);
     }
 
-    // GET api/user  (user info)
-    public function user(Request $request)
-    {
-        return response()->json([
-            'status' => true,
-            'user' => $request->user()
-        ]);
-    }
 }

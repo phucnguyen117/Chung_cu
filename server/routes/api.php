@@ -13,6 +13,7 @@ use App\Http\Controllers\SavedPostController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -38,8 +39,13 @@ Route::get('/posts/{postId}/reviews', [ReviewController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Auth (all)
-    Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // profile (all)
+    Route::get('user/profile', [UserController::class, 'profile']);
+    Route::put('user/profile', [UserController::class, 'updateProfile']);
+    Route::post('user/profile/avatar', [UserController::class, 'updateAvatar']);
+    Route::put('user/change-password', [UserController::class, 'changePassword']);
 
     // Posts (admin & lessor)
     Route::post('/posts', [PostController::class, 'store']);
