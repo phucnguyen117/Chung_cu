@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PostImageController;
 use App\Http\Controllers\CategoryController;
@@ -22,6 +23,9 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
+
+Route::get('/blogs', [BlogController::class, 'index']);
+Route::get('/blogs/{id}', [BlogController::class, 'show']);
 
 Route::get('/provinces', [LocationController::class, 'getProvinces']);
 Route::get('/districts', [LocationController::class, 'getDistricts']);
@@ -125,6 +129,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/read/{id}', [NotificationsController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationsController::class, 'markAll']);
     Route::get('/notifications/unread-count', [NotificationsController::class, 'unreadCount']);
+
+    // Blogs (admin)
+    Route::post('/blogs', [BlogController::class, 'store']);
+    Route::put('/blogs/{id}', [BlogController::class, 'update']);
+    Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
 });
 
 
