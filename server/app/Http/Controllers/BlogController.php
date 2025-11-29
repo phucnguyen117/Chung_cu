@@ -75,7 +75,7 @@ class BlogController extends Controller
                 'title' => $request->title,
                 'slug' => $slug,
                 'excerpt' => $request->excerpt,
-                'content' => $request->content,
+                'content' => $request->input(content),
                 'cover' => $request->cover,
                 'published_at' => $request->published_at
                     ? Carbon::parse($request->published_at)
