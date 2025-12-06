@@ -20,8 +20,11 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BlogTagController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\ChatbotController;
 use Illuminate\Support\Facades\Route;
 
+// ================== CHATBOT ==================
+Route::post('/chatbot', [ChatbotController::class, 'sendMessage']);
 
 // ================== AUTH PUBLIC ==================
 Route::post('/register', [AuthController::class, 'register']);

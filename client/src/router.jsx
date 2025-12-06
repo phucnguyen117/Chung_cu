@@ -2,6 +2,7 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import Footer from './components/Footer.jsx'
+import ChatBot from './components/Chatbot.jsx'
 
 // Public pages
 import Rooms from './pages/Rooms.jsx'
@@ -43,6 +44,7 @@ function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <ChatBot />
     </div>
   )
 }
