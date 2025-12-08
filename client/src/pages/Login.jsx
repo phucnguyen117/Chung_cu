@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import '../assets/style/pages/login.css'
+import { api } from '../api/axios'
 
 export default function Login({ onClose, onSwitchToRegister }) {
   const location = useLocation()
@@ -38,7 +39,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
     try {
       setLoading(true)
 
-      const res = await fetch('/api/login', {
+      const res = await api.post('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
