@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',   // chỗ Laravel php artisan serve
+        target: import.meta.env.VITE_API_URL || 'http://localhost:8000',   // chỗ Laravel php artisan serve
         changeOrigin: true,
         secure: false,
       },
