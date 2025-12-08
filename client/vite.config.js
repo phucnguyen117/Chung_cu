@@ -9,14 +9,15 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-  }, server: {
+  },
+  server: {
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000',
+        target: process.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/api'), // giữ nguyên /api
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
     },
   },

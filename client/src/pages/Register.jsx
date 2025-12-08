@@ -97,7 +97,7 @@ export default function Register({ onClose , onSwitchToLogin }) {
        * Lỗi validate (422):
        *  { status: false, message: "Lỗi xác thực dữ liệu", errors: { field: [...] } }
        */
-      const res = await fetch('/api/register', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
