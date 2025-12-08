@@ -26,72 +26,73 @@ export default function Login({ onClose, onSwitchToRegister }) {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  setError('')
 
-    if (!email.trim() || !password.trim()) {
-      setError('Vui lòng nhập đầy đủ email và mật khẩu.')
-      return
-    }
+  if (!email.trim() || !password.trim()) {
+    setError('Vui lòng nhập đầy đủ email và mật khẩu.')
+    return
+  }
+
+  try {
+    setLoading(true)
+
+    const API = import.meta.env.VITE_API_URL
+
+    const res = await fetch(`${API}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const text = await res.text()
+    let data = null
 
     try {
-      setLoading(true)
+      data = JSON.parse(text)
+    } catch {}
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const text = await res.text()
-      let data = null
-      try {
-        data = JSON.parse(text)
-      } catch {
-        data = null
+    if (!res.ok || data?.status === false) {
+      if (res.status === 422 && data?.errors) {
+        const firstError =
+          Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực dữ liệu.'
+        throw new Error(firstError)
       }
-
-      if (!res.ok || data?.status === false) {
-        if (res.status === 422 && data?.errors) {
-          const firstError =
-            Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực dữ liệu.'
-          throw new Error(firstError)
-        }
-        throw new Error(
-          data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại.'
-        )
-      }
-
-      const token =
-        data?.access_token ||
-        data?.token ||
-        data?.data?.access_token ||
-        data?.data?.token
-
-      const user =
-        data?.user ||
-        data?.data?.user ||
-        data?.data ||
-        null
-
-      if (token) localStorage.setItem('access_token', token)
-      if (user) localStorage.setItem('auth_user', JSON.stringify(user))
-
-      window.dispatchEvent(new Event('auth:changed'))
-      localStorage.removeItem('user')
-
-      onClose && onClose()
-    } catch (err) {
-      console.error(err)
-      setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
-    } finally {
-      setLoading(false)
+      throw new Error(
+        data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại.'
+      )
     }
+
+    const token =
+      data?.access_token ||
+      data?.token ||
+      data?.data?.access_token ||
+      data?.data?.token
+
+    const user =
+      data?.user ||
+      data?.data?.user ||
+      data?.data ||
+      null
+
+    if (token) localStorage.setItem('access_token', token)
+    if (user) localStorage.setItem('auth_user', JSON.stringify(user))
+
+    window.dispatchEvent(new Event('auth:changed'))
+    localStorage.removeItem('user')
+
+    onClose && onClose()
+  } catch (err) {
+    console.error(err)
+    setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="login-overlay" onClick={handleOverlayClick}>
