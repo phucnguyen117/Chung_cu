@@ -2,9 +2,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 export default defineConfig({
   plugins: [react()],
@@ -16,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: import.meta.env.VITE_API_URL || 'http://localhost:8000',   // chỗ Laravel php artisan serve
+        target: process.env.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'), // giữ nguyên /api
