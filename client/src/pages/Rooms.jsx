@@ -129,6 +129,9 @@ export default function RoomsExplore() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // ==== MOBILE FILTER OVERLAY ====
+  const [showMobileFilter, setShowMobileFilter] = useState(false)
+
   // ===== LẤY DANH SÁCH TỈNH / THÀNH =====
   useEffect(() => {
     async function loadProvinces() {
@@ -454,7 +457,7 @@ export default function RoomsExplore() {
       <div className="rebar u-fullbleed" ref={barRef}>
         <div className="container rebar__inner">
           <form
-            className="rebar-search"
+            className="rebar-search rebar-search--compact"
             onSubmit={e => {
               e.preventDefault()
               applyFilters()
@@ -572,6 +575,15 @@ export default function RoomsExplore() {
                 <p>{total.toLocaleString()} tin phù hợp</p>
               )}
             </div>
+
+            {/* nút lọc nhanh – sẽ ẩn trên desktop bằng CSS */}
+            <button
+              type="button"
+              className="re-btn re-btn--ghost re-results__filter-btn"
+              onClick={() => setShowMobileFilter(true)}
+            >
+              Bộ lọc nhanh
+            </button>
           </header>
 
           {error && <p className="re-error">{error}</p>}
@@ -668,12 +680,10 @@ export default function RoomsExplore() {
           </nav>
         </div>
 
-        {/* RIGHT: ASIDE FILTER */}
+        {/* RIGHT: ASIDE FILTER – dùng cho desktop */}
         <aside className="re-aside">
           <div className="re-filtercard">
             <h3>Bộ lọc nhanh</h3>
-
-            
 
             <div className="re-field">
               <label>Tiện ích</label>
@@ -742,6 +752,7 @@ export default function RoomsExplore() {
             <div className="re-field">
               <label>Sắp xếp</label>
               <select
+                className="re-input"
                 value={sort}
                 onChange={e => setSort(e.target.value)}
               >
@@ -770,6 +781,136 @@ export default function RoomsExplore() {
             </div>
           </div>
         </aside>
+
+        {/* POPUP BỘ LỌC NHANH MOBILE */}
+        {showMobileFilter && (
+          <>
+            <div
+              className="mobile-filter-backdrop"
+              onClick={() => setShowMobileFilter(false)}
+            />
+            <div
+              className="mobile-filter-panel"
+              onClick={() => setShowMobileFilter(false)}
+            >
+              <div
+                className="mobile-filter-panel__inner"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="mobile-filter-panel__header">
+                  <h3>Bộ lọc nhanh</h3>
+                  <button
+                    type="button"
+                    className="mobile-filter-close"
+                    onClick={() => setShowMobileFilter(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mobile-filter-panel__body">
+                  <div className="re-field">
+                    <label>Tiện ích</label>
+                    <div className="re-checklist">
+                      {amenityOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Môi trường xung quanh</label>
+                    <div className="re-checklist">
+                      {envOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Đối tượng</label>
+                    <div className="re-checklist">
+                      {member.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Chính sách</label>
+                    <div className="re-checklist">
+                      {policy.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Sắp xếp</label>
+                    <select
+                      className="re-input"
+                      value={sort}
+                      onChange={e => setSort(e.target.value)}
+                    >
+                      <option value="new">Tin mới</option>
+                      <option value="price_asc">Giá tăng dần</option>
+                      <option value="price_desc">Giá giảm dần</option>
+                      <option value="area_desc">Diện tích lớn</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mobile-filter-panel__actions">
+                  <button
+                    type="button"
+                    className="re-btn re-btn--primary"
+                    onClick={() => {
+                      applyFilters()
+                      setShowMobileFilter(false)
+                    }}
+                  >
+                    Áp dụng
+                  </button>
+                  <button
+                    type="button"
+                    className="re-btn re-btn--ghost"
+                    onClick={clearAll}
+                  >
+                    Xoá bộ lọc
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </div>
   )

@@ -344,7 +344,7 @@
 }
 
 .admin-btn--primary {
-  margin: 20px 0 0 0;
+  margin: 0 ;
   background: linear-gradient(135deg, #38bdf8, #22c55e);
   color: #0f172a;
   box-shadow: 0 14px 35px rgba(8, 47, 73, 0.9);
@@ -765,4 +765,113 @@
 .admin-checking {
   font-size: 15px;
   opacity: 0.8;
+}
+/* =========================
+   ADMIN PAGES - MOBILE / RESPONSIVE
+   Keep desktop admin UI intact; apply stacking and touch-friendly sizes on narrow viewports.
+   ========================= */
+
+/* Tablet: make admin forms stack into 1 column and reduce paddings */
+@media (max-width: 1024px) {
+  .admin-section--card {
+    padding: 18px 16px;
+  }
+
+  .admin-form__row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-form__col--sm {
+    max-width: none;
+  }
+
+  .admin-upload-preview {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+}
+
+/* Mobile: compact admin layout, full-width inputs, stacked actions */
+@media (max-width: 768px) {
+  .admin-section--card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .admin-form {
+    gap: 12px;
+  }
+
+  .admin-form__row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form__col {
+    width: 100%;
+  }
+
+  .admin-label {
+    font-size: 14px;
+  }
+
+  .admin-input {
+    height: 44px;
+    padding: 10px 12px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .admin-input--textarea {
+    min-height: 120px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .admin-chip-list {
+    gap: 6px;
+  }
+
+  .admin-upload-preview__item {
+    height: 90px;
+  }
+
+  .admin-form__actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .admin-form__actions .btn,
+  .admin-form__actions .re-btn,
+  .admin-form__actions .auth-btn {
+    width: 100%;
+  }
+
+  /* compact notifications */
+  .admin-error,
+  .admin-success {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+}
+
+/* Very small screens: tighten spacing and increase touch targets */
+@media (max-width: 480px) {
+  .admin-section--card {
+    padding: 12px;
+  }
+
+  .admin-upload-preview {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  }
+
+  .admin-upload-preview__item {
+    height: 80px;
+  }
+
+  .admin-input,
+  .admin-input--textarea {
+    font-size: 15px;
+  }
 }

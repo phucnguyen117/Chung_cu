@@ -684,3 +684,183 @@
     margin-top: 30px;
   }
 }
+
+/* ==== FORM FILTER GỌN & ĐẸP TRÊN MOBILE (RoomsExplore) ==== */
+@media (max-width: 768px) {
+  .rebar-search--compact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 cột */
+    gap: 8px;
+    padding: 10px 0;
+    align-items: stretch;
+  }
+
+  .rebar-search--compact > * {
+    min-width: 0;
+  }
+
+  /* Ô search: full hàng trên cùng */
+  .rebar-search--compact > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .rebar-search--compact input,
+  .rebar-search--compact select {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .rebar-search--compact .re-btn[type='submit'] {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+}
+/* nút Bộ lọc nhanh – desktop ẩn, mobile hiện */
+.re-results__filter-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .re-results__filter-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* ẩn aside filter ở mobile – dùng popup thay thế */
+  .re-aside {
+    display: none;
+  }
+}
+/* ===== MOBILE QUICK FILTER OVERLAY ===== */
+.mobile-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(2px);
+  z-index: 79;
+}
+
+/* Panel bộ lọc nhanh mobile: hiển thị giữa màn hình */
+.mobile-filter-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;        /* <== đổi từ flex-end thành center */
+  justify-content: center;
+  z-index: 80;
+  padding: 16px;              /* chừa mép hai bên cho đẹp */
+}
+
+.mobile-filter-panel__inner {
+  width: 100%;
+  max-width: 480px;
+  max-height: 80vh;           /* không tràn màn hình */
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 16px;        /* bo tròn 4 góc */
+  padding: 16px 16px 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+  overflow-y: auto;           /* nội dung dài thì scroll trong panel */
+}
+
+/* chỉ dùng cho màn mobile */
+@media (min-width: 769px) {
+  .mobile-filter-backdrop,
+  .mobile-filter-panel {
+    display: none;
+  }
+}
+
+.mobile-filter-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-filter-panel__header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #f9fafb;
+}
+
+.mobile-filter-close {
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.mobile-filter-close:hover {
+  color: #ffffff;
+}
+
+.mobile-filter-panel__body {
+  margin-top: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.mobile-filter-panel__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mobile-filter-panel__actions .re-btn {
+  flex: 1;
+}
+/* ==== THANH TÌM KIẾM DÍNH TRÊN (RoomsExplore) ==== */
+.rebar {
+  position: static;                   /* dính theo khi cuộn */
+  top: 64px;                          /* nằm dưới header desktop */
+  z-index: 30;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0.96),
+    rgba(15, 23, 42, 0.92)
+  );
+  backdrop-filter: blur(10px);
+}
+
+/* bên trong thanh tìm kiếm */
+.rebar__inner {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* khi đã cuộn qua hero (class rebar--scrolled gắn bằng JS) */
+.rebar--scrolled .rebar__inner {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.rebar--scrolled .rebar-search {
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.8);
+  border-radius: 10px;
+}
+/* Mobile: dính sát ngay dưới header nhỏ hơn */
+@media (max-width: 768px) {
+  .rebar {
+    top: 56px;        /* đúng chiều cao header mobile của anh */
+  }
+
+  .rebar__inner {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .rebar-search {
+    gap: 6px;
+  }
+
+  .rebar--scrolled .rebar-search {
+    border-radius: 8px;
+  }
+}

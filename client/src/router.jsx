@@ -17,6 +17,7 @@ import Homes from './pages/Homes.jsx'
 import PostDetail from './pages/postDetail.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+import Wishlist from './pages/Wishlist.jsx'
 
 
 
@@ -61,7 +62,7 @@ export const router = createBrowserRouter([
       { path: '/ky-tuc-xa', element: <Dorms /> },
       { path: '/reviews', element: <Reviews /> },  
       { path: '/blog', element: <Blog /> },
-
+      { path: '/wishlist', element: <Wishlist /> },
       // login/register nếu đang dùng popup thì sau bỏ cũng được
       // { path: '/login', element: <Login /> },
       // { path: '/register', element: <Register /> },

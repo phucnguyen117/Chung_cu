@@ -49,25 +49,7 @@ const AREA = [
   { v: '180-999', t: '> 180 m²' },
 ]
 
-// Các nhóm filter ở aside – vẫn để cứng
-const AMENITIES = [
-  { k: 'gara', t: 'Gara/đậu xe' },
-  { k: 'san-vuon', t: 'Sân vườn' },
-  { k: 'noi-that', t: 'Nội thất' },
-  { k: 'ban-cong', t: 'Ban công' },
-  { k: 'may-lanh', t: 'Máy lạnh' },
-  { k: 'an-ninh', t: 'Khu an ninh' },
-]
-
-const environment = [
-  { k: 'cho', t: 'Chợ' },
-  { k: 'cong-vien', t: 'Công viên' },
-  { k: 'truong-hoc', t: 'Trường học' },
-  { k: 'ben-xe-bus', t: 'Bến xe bus' },
-  { k: 'sieu-thi', t: 'Siêu thị' },
-  { k: 'trung-tam-the-thao', t: 'Trung tâm thể thao' },
-]
-
+// Các nhóm “đối tượng” + “chính sách” – để cứng
 const member = [
   { k: 'di-hoc', t: 'Đi học' },
   { k: 'di-lam', t: 'Đi làm' },
@@ -102,51 +84,39 @@ export default function HousesExplore() {
   const { search } = useLocation()
   const qs = new URLSearchParams(search)
 
-  // ===== DANH SÁCH TỈNH / QUẬN TỪ API =====
+  // ==== LOCATION STATE (TỈNH / QUẬN) ====
   const [provinceList, setProvinceList] = useState([])
   const [districtList, setDistrictList] = useState([])
 
-  // ===== GIÁ TRỊ KHỞI TẠO TỪ QUERY (ĐÃ ÁP DỤNG) =====
-  const initQ = qs.get('q') || ''
-  const initProvince = qs.get('province') || ''
-  const initDistrict = qs.get('district') || ''
-  const initPrice = qs.get('price') || ''
-  const initArea = qs.get('area') || ''
-  const initAmenArr = (qs.get('amen') || '').split(',').filter(Boolean)
-  const initSort = qs.get('sort') || 'new'
-
-  // ===== STATE DRAFT (gõ ở UI) =====
-  const [qDraft, setQDraft] = useState(initQ)
-  const [provinceDraft, setProvinceDraft] = useState(initProvince)
-  const [districtDraft, setDistrictDraft] = useState(initDistrict)
-  const [priceDraft, setPriceDraft] = useState(initPrice)
-  const [areaDraft, setAreaDraft] = useState(initArea)
-  const [amenDraft, setAmenDraft] = useState(initAmenArr)
-  const [sortDraft, setSortDraft] = useState(initSort)
-
-  // ===== STATE FILTER ĐÃ ÁP DỤNG (dùng để lọc) =====
-  const [q, setQ] = useState(initQ)
-  const [province, setProvince] = useState(initProvince)
-  const [district, setDistrict] = useState(initDistrict)
-  const [price, setPrice] = useState(initPrice)
-  const [area, setArea] = useState(initArea)
-  const [amen, setAmen] = useState(initAmenArr)
-  const [sort, setSort] = useState(initSort)
+  // ==== FILTER STATE (dùng để LỌC THỰC TẾ) ====
+  const [q, setQ] = useState(qs.get('q') || '')
+  const [province, setProvince] = useState(qs.get('province') || '')
+  const [district, setDistrict] = useState(qs.get('district') || '')
+  const [price, setPrice] = useState(qs.get('price') || '')
+  const [area, setArea] = useState(qs.get('area') || '')
+  const [amen, setAmen] = useState(
+    (qs.get('amen') || '').split(',').filter(Boolean),
+  )
+  const [sort, setSort] = useState(qs.get('sort') || 'new')
   const [page, setPage] = useState(Number(qs.get('page') || 1))
 
-  // label hiển thị chip cho tỉnh / quận
-  const [provinceLabel, setProvinceLabel] = useState('')
-  const [districtLabel, setDistrictLabel] = useState('')
+  // version filter đã APPLY – chỉ khi tăng version mới lọc lại
+  const [appliedVersion, setAppliedVersion] = useState(0)
 
   const PAGE_SIZE = 8
 
-  const [rawItems, setRawItems] = useState([])
-  const [items, setItems] = useState([])
+  // ==== DATA STATE ====
+  const [rawItems, setRawItems] = useState([]) // tất cả houses từ API
+  const [items, setItems] = useState([]) // sau khi lọc + phân trang
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // sticky shadow cho thanh filter-top
+  // ==== OPTIONS TỪ BACKEND (amenities + environment) ====
+  const [amenityOptions, setAmenityOptions] = useState([])
+  const [envOptions, setEnvOptions] = useState([])
+
+  // ==== STICKY BAR ====
   const barRef = useRef(null)
   useEffect(() => {
     const onScroll = () => {
@@ -158,7 +128,10 @@ export default function HousesExplore() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // ===== GỌI API LẤY DANH SÁCH TỈNH =====
+  // ==== MOBILE FILTER OVERLAY ====
+  const [showMobileFilter, setShowMobileFilter] = useState(false)
+
+  // ===== LẤY DANH SÁCH TỈNH / THÀNH =====
   useEffect(() => {
     async function loadProvinces() {
       try {
@@ -172,18 +145,18 @@ export default function HousesExplore() {
     loadProvinces()
   }, [])
 
-  // ===== GỌI API LẤY DANH SÁCH QUẬN KHI ĐỔI TỈNH (DRAFT) =====
+  // ===== LẤY DANH SÁCH QUẬN / HUYỆN KHI ĐỔI TỈNH =====
   useEffect(() => {
-    if (!provinceDraft) {
+    if (!province) {
       setDistrictList([])
-      setDistrictDraft('')
+      setDistrict('')
       return
     }
 
     async function loadDistricts() {
       try {
         const res = await axios.get(`${API_BASE_URL}/districts`, {
-          params: { province_id: provinceDraft },
+          params: { province_id: province },
         })
         const data = res.data.data || res.data
         setDistrictList(data)
@@ -193,34 +166,39 @@ export default function HousesExplore() {
     }
 
     loadDistricts()
-  }, [provinceDraft])
+  }, [province])
 
-  // ===== ÁP DỤNG FILTER TỪ DRAFT =====
-  const applyFilters = () => {
-    const pObj = provinceList.find(
-      p => String(p.id) === String(provinceDraft),
-    )
-    const dObj = districtList.find(
-      d => String(d.id) === String(districtDraft),
-    )
-
-    setQ(qDraft)
-    setProvince(provinceDraft)
-    setDistrict(districtDraft)
-    setPrice(priceDraft)
-    setArea(areaDraft)
-    setAmen(amenDraft)
-    setSort(sortDraft)
-
-    setProvinceLabel(pObj?.name || '')
-    setDistrictLabel(dObj?.name || '')
-
-    setPage(1)
-  }
-
-  // ===== GỌI API LẤY DANH SÁCH NHÀ (CATEGORY_ID = 2) =====
+  // ===== LẤY LIST TIỆN ÍCH & ĐẶC ĐIỂM MÔI TRƯỜNG TỪ API =====
   useEffect(() => {
-    const fetchData = async () => {
+    const normalizeOptions = raw =>
+      (raw || []).map(item => ({
+        k: item.slug || item.key || String(item.id),
+        t: item.name || item.label || item.title || '',
+      }))
+
+    async function loadOptions() {
+      try {
+        const [amenRes, envRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/amenities`),
+          axios.get(`${API_BASE_URL}/environment-features`),
+        ])
+
+        const amenData = amenRes.data.data || amenRes.data
+        const envData = envRes.data.data || envRes.data
+
+        setAmenityOptions(normalizeOptions(amenData))
+        setEnvOptions(normalizeOptions(envData))
+      } catch (err) {
+        console.error('Lỗi load amenities / environment-features', err)
+      }
+    }
+
+    loadOptions()
+  }, [])
+
+  // ===== LẤY DANH SÁCH NHÀ (CATEGORY_ID = 2) =====
+  useEffect(() => {
+    async function loadHouses() {
       try {
         setLoading(true)
         setError('')
@@ -235,7 +213,6 @@ export default function HousesExplore() {
           .filter(p => p.status === 'published')
           .map(p => {
             const candidates = []
-
             if (p.cover_image) candidates.push(p.cover_image)
             if (p.main_image_url) candidates.push(p.main_image_url)
             if (p.thumbnail_url) candidates.push(p.thumbnail_url)
@@ -268,7 +245,6 @@ export default function HousesExplore() {
               firstImg = 'https://via.placeholder.com/400x250?text=No+Image'
             }
 
-            // Tiện ích gắn với post (nếu backend có)
             const rawAmenities = Array.isArray(p.amenities)
               ? p.amenities
               : Array.isArray(p.post_amenities)
@@ -322,18 +298,18 @@ export default function HousesExplore() {
           })
 
         setRawItems(mapped)
-      } catch (e) {
-        console.error(e)
+      } catch (err) {
+        console.error(err)
         setError('Không tải được danh sách nhà cho thuê.')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
+    loadHouses()
   }, [])
 
-  // ===== FILTER + SORT + PAGINATE (theo state đã áp dụng) =====
+  // ===== FILTER + SORT + PAGINATE =====
   useEffect(() => {
     let data = [...rawItems]
 
@@ -361,14 +337,14 @@ export default function HousesExplore() {
     if (sort === 'price_asc') data.sort((a, b) => a.price - b.price)
     else if (sort === 'price_desc') data.sort((a, b) => b.price - a.price)
     else if (sort === 'area_desc') data.sort((a, b) => b.area - a.area)
-    // sort = 'new' giữ nguyên thứ tự API
+    // sort === 'new' giữ order mặc định từ API
 
     setTotal(data.length)
     const start = (page - 1) * PAGE_SIZE
     setItems(data.slice(start, start + PAGE_SIZE))
-  }, [rawItems, q, province, district, price, area, amen, sort, page])
+  }, [rawItems, appliedVersion, page])
 
-  // ===== SYNC QUERY LÊN URL (dùng filter đã áp dụng) =====
+  // ===== SYNC QUERY LÊN URL =====
   useEffect(() => {
     const p = new URLSearchParams()
     if (q) p.set('q', q)
@@ -380,69 +356,77 @@ export default function HousesExplore() {
     if (sort !== 'new') p.set('sort', sort)
     if (page > 1) p.set('page', String(page))
     nav({ search: p.toString() })
-  }, [q, province, district, price, area, amen, sort, page, nav])
+  }, [appliedVersion, page, nav])
 
-  // toggle tiện ích (draft)
-  const toggleAmenDraft = k => {
-    setAmenDraft(s => (s.includes(k) ? s.filter(x => x !== k) : [...s, k]))
+  const toggleAmen = k => {
+    setAmen(s => (s.includes(k) ? s.filter(x => x !== k) : [...s, k]))
   }
 
   const chips = useMemo(() => {
     const arr = []
     if (q) arr.push({ k: 'q', t: `"${q}"` })
-    if (province)
-      arr.push({ k: 'province', t: provinceLabel || 'Tỉnh/Thành' })
-    if (district)
-      arr.push({ k: 'district', t: districtLabel || 'Quận/Huyện' })
+
+    if (province) {
+      const pObj = provinceList.find(p => String(p.id) === String(province))
+      arr.push({ k: 'province', t: pObj?.name || 'Tỉnh/Thành' })
+    }
+    if (district) {
+      const dObj = districtList.find(d => String(d.id) === String(district))
+      arr.push({ k: 'district', t: dObj?.name || 'Quận/Huyện' })
+    }
     if (price) arr.push({ k: 'price', t: PRICE.find(x => x.v === price)?.t })
     if (area) arr.push({ k: 'area', t: AREA.find(x => x.v === area)?.t })
 
-    const amenLabelPool = [...AMENITIES, ...environment, ...member, ...policy]
+    const amenLabelPool = [...amenityOptions, ...envOptions, ...member, ...policy]
     amen.forEach(a => {
       const label = amenLabelPool.find(x => x.k === a)?.t || a
       arr.push({ k: 'amen', v: a, t: label })
     })
 
     return arr
-  }, [q, province, district, price, area, amen, provinceLabel, districtLabel])
+  }, [
+    appliedVersion,
+    provinceList,
+    districtList,
+    q,
+    province,
+    district,
+    price,
+    area,
+    amen,
+    amenityOptions,
+    envOptions,
+  ])
 
   const clearChip = (k, v) => {
-    if (k === 'q') {
-      setQ('')
-      setQDraft('')
-    }
-    if (k === 'province') {
-      setProvince(''); setProvinceDraft(''); setProvinceLabel('')
-      setDistrict(''); setDistrictDraft(''); setDistrictLabel('')
-    }
-    if (k === 'district') {
-      setDistrict(''); setDistrictDraft(''); setDistrictLabel('')
-    }
-    if (k === 'price') {
-      setPrice(''); setPriceDraft('')
-    }
-    if (k === 'area') {
-      setArea(''); setAreaDraft('')
-    }
-    if (k === 'amen') {
-      setAmen(s => s.filter(x => x !== v))
-      setAmenDraft(s => s.filter(x => x !== v))
-    }
+    if (k === 'q') setQ('')
+    if (k === 'province') setProvince('')
+    if (k === 'district') setDistrict('')
+    if (k === 'price') setPrice('')
+    if (k === 'area') setArea('')
+    if (k === 'amen') setAmen(s => s.filter(x => x !== v))
     setPage(1)
+    setAppliedVersion(ver => ver + 1)
   }
 
   const clearAll = () => {
-    setQ(''); setQDraft('')
-    setProvince(''); setProvinceDraft(''); setProvinceLabel('')
-    setDistrict(''); setDistrictDraft(''); setDistrictLabel('')
-    setPrice(''); setPriceDraft('')
-    setArea(''); setAreaDraft('')
-    setAmen([]); setAmenDraft([])
-    setSort('new'); setSortDraft('new')
+    setQ('')
+    setProvince('')
+    setDistrict('')
+    setPrice('')
+    setArea('')
+    setAmen([])
+    setSort('new')
     setPage(1)
+    setAppliedVersion(ver => ver + 1)
   }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const applyFilters = () => {
+    setPage(1)
+    setAppliedVersion(ver => ver + 1)
+  }
 
   return (
     <div className="re">
@@ -460,7 +444,7 @@ export default function HousesExplore() {
         <div className="container re-hero__inner">
           <div>
             <h1>Khám phá nhà nguyên căn • studio • officetel</h1>
-            <p>Lọc chi tiết, gợi ý thông minh & tin xác thực.</p>
+            <p>Lọc chi tiết, gợi ý thông minh &amp; tin xác thực.</p>
           </div>
         </div>
       </section>
@@ -469,7 +453,7 @@ export default function HousesExplore() {
       <div className="rebar u-fullbleed" ref={barRef}>
         <div className="container rebar__inner">
           <form
-            className="rebar-search"
+            className="rebar-search rebar-search--compact"
             onSubmit={e => {
               e.preventDefault()
               applyFilters()
@@ -478,19 +462,18 @@ export default function HousesExplore() {
             <div className="re-input re-input--grow">
               <span className="re-ico">🔎</span>
               <input
-                value={qDraft}
-                onChange={e => setQDraft(e.target.value)}
+                value={q}
+                onChange={e => setQ(e.target.value)}
                 placeholder="Từ khoá, khu vực, tuyến đường..."
               />
             </div>
 
-            {/* Tỉnh/Thành (API) */}
             <select
               className="re-input"
-              value={provinceDraft}
+              value={province}
               onChange={e => {
-                setProvinceDraft(e.target.value)
-                setDistrictDraft('')
+                setProvince(e.target.value)
+                setDistrict('')
               }}
             >
               <option value="">Tỉnh/Thành</option>
@@ -501,12 +484,11 @@ export default function HousesExplore() {
               ))}
             </select>
 
-            {/* Quận/Huyện (API) */}
             <select
               className="re-input"
-              value={districtDraft}
-              onChange={e => setDistrictDraft(e.target.value)}
-              disabled={!provinceDraft}
+              value={district}
+              onChange={e => setDistrict(e.target.value)}
+              disabled={!province}
             >
               <option value="">Quận/Huyện</option>
               {districtList.map(d => (
@@ -518,8 +500,8 @@ export default function HousesExplore() {
 
             <select
               className="re-input"
-              value={priceDraft}
-              onChange={e => setPriceDraft(e.target.value)}
+              value={price}
+              onChange={e => setPrice(e.target.value)}
             >
               {PRICE.map(o => (
                 <option key={o.v} value={o.v}>
@@ -527,10 +509,11 @@ export default function HousesExplore() {
                 </option>
               ))}
             </select>
+
             <select
               className="re-input"
-              value={areaDraft}
-              onChange={e => setAreaDraft(e.target.value)}
+              value={area}
+              onChange={e => setArea(e.target.value)}
             >
               {AREA.map(o => (
                 <option key={o.v} value={o.v}>
@@ -538,10 +521,11 @@ export default function HousesExplore() {
                 </option>
               ))}
             </select>
+
             <select
               className="re-input"
-              value={sortDraft}
-              onChange={e => setSortDraft(e.target.value)}
+              value={sort}
+              onChange={e => setSort(e.target.value)}
             >
               <option value="new">Tin mới</option>
               <option value="price_asc">Giá tăng dần</option>
@@ -587,6 +571,15 @@ export default function HousesExplore() {
                 <p>{total.toLocaleString()} tin phù hợp</p>
               )}
             </div>
+
+            {/* nút lọc nhanh – ẩn trên desktop bằng CSS */}
+            <button
+              type="button"
+              className="re-btn re-btn--ghost re-results__filter-btn"
+              onClick={() => setShowMobileFilter(true)}
+            >
+              Bộ lọc nhanh
+            </button>
           </header>
 
           {error && <p className="re-error">{error}</p>}
@@ -622,7 +615,6 @@ export default function HousesExplore() {
                       <span>{it.addr}</span>
                     </div>
 
-                    {/* TIỆN ÍCH NGAY DƯỚI META */}
                     {amenToShow.length > 0 && (
                       <div className="re-card__amen">
                         {amenToShow.map(a => (
@@ -638,7 +630,10 @@ export default function HousesExplore() {
 
                     <div className="re-card__foot">
                       <span className="time">{it.time}</span>
-                      <Link to={`/post/${it.id}`} className="re-btn re-btn--line">
+                      <Link
+                        to={`/post/${it.id}`}
+                        className="re-btn re-btn--line"
+                      >
                         Xem chi tiết
                       </Link>
                     </div>
@@ -680,19 +675,20 @@ export default function HousesExplore() {
           </nav>
         </div>
 
-        {/* RIGHT: ASIDE FILTER */}
+        {/* RIGHT: ASIDE FILTER – desktop */}
         <aside className="re-aside">
           <div className="re-filtercard">
             <h3>Bộ lọc nhanh</h3>
+
             <div className="re-field">
               <label>Tiện ích</label>
               <div className="re-checklist">
-                {AMENITIES.map(a => (
+                {amenityOptions.map(a => (
                   <label key={a.k} className="re-check">
                     <input
                       type="checkbox"
-                      checked={amenDraft.includes(a.k)}
-                      onChange={() => toggleAmenDraft(a.k)}
+                      checked={amen.includes(a.k)}
+                      onChange={() => toggleAmen(a.k)}
                     />
                     <span>{a.t}</span>
                   </label>
@@ -703,12 +699,12 @@ export default function HousesExplore() {
             <div className="re-field">
               <label>Môi trường xung quanh</label>
               <div className="re-checklist">
-                {environment.map(a => (
+                {envOptions.map(a => (
                   <label key={a.k} className="re-check">
                     <input
                       type="checkbox"
-                      checked={amenDraft.includes(a.k)}
-                      onChange={() => toggleAmenDraft(a.k)}
+                      checked={amen.includes(a.k)}
+                      onChange={() => toggleAmen(a.k)}
                     />
                     <span>{a.t}</span>
                   </label>
@@ -723,8 +719,8 @@ export default function HousesExplore() {
                   <label key={a.k} className="re-check">
                     <input
                       type="checkbox"
-                      checked={amenDraft.includes(a.k)}
-                      onChange={() => toggleAmenDraft(a.k)}
+                      checked={amen.includes(a.k)}
+                      onChange={() => toggleAmen(a.k)}
                     />
                     <span>{a.t}</span>
                   </label>
@@ -739,8 +735,8 @@ export default function HousesExplore() {
                   <label key={a.k} className="re-check">
                     <input
                       type="checkbox"
-                      checked={amenDraft.includes(a.k)}
-                      onChange={() => toggleAmenDraft(a.k)}
+                      checked={amen.includes(a.k)}
+                      onChange={() => toggleAmen(a.k)}
                     />
                     <span>{a.t}</span>
                   </label>
@@ -751,8 +747,9 @@ export default function HousesExplore() {
             <div className="re-field">
               <label>Sắp xếp</label>
               <select
-                value={sortDraft}
-                onChange={e => setSortDraft(e.target.value)}
+                className="re-input"
+                value={sort}
+                onChange={e => setSort(e.target.value)}
               >
                 <option value="new">Tin mới</option>
                 <option value="price_asc">Giá tăng dần</option>
@@ -779,6 +776,136 @@ export default function HousesExplore() {
             </div>
           </div>
         </aside>
+
+        {/* POPUP BỘ LỌC NHANH MOBILE */}
+        {showMobileFilter && (
+          <>
+            <div
+              className="mobile-filter-backdrop"
+              onClick={() => setShowMobileFilter(false)}
+            />
+            <div
+              className="mobile-filter-panel"
+              onClick={() => setShowMobileFilter(false)}
+            >
+              <div
+                className="mobile-filter-panel__inner"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="mobile-filter-panel__header">
+                  <h3>Bộ lọc nhanh</h3>
+                  <button
+                    type="button"
+                    className="mobile-filter-close"
+                    onClick={() => setShowMobileFilter(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mobile-filter-panel__body">
+                  <div className="re-field">
+                    <label>Tiện ích</label>
+                    <div className="re-checklist">
+                      {amenityOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Môi trường xung quanh</label>
+                    <div className="re-checklist">
+                      {envOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Đối tượng</label>
+                    <div className="re-checklist">
+                      {member.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Chính sách</label>
+                    <div className="re-checklist">
+                      {policy.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Sắp xếp</label>
+                    <select
+                      className="re-input"
+                      value={sort}
+                      onChange={e => setSort(e.target.value)}
+                    >
+                      <option value="new">Tin mới</option>
+                      <option value="price_asc">Giá tăng dần</option>
+                      <option value="price_desc">Giá giảm dần</option>
+                      <option value="area_desc">Diện tích lớn</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mobile-filter-panel__actions">
+                  <button
+                    type="button"
+                    className="re-btn re-btn--primary"
+                    onClick={() => {
+                      applyFilters()
+                      setShowMobileFilter(false)
+                    }}
+                  >
+                    Áp dụng
+                  </button>
+                  <button
+                    type="button"
+                    className="re-btn re-btn--ghost"
+                    onClick={clearAll}
+                  >
+                    Xoá bộ lọc
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </div>
   )

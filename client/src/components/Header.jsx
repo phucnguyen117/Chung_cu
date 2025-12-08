@@ -36,6 +36,9 @@ export default function Header() {
   // ====== WISHLIST ======
   const [wishlistCount, setWishlistCount] = useState(0)
 
+  // ====== ADMIN NOTIFICATIONS ======
+  const [hasAdminNotifications, setHasAdminNotifications] = useState(false)
+
   // danh sách 4 category hiển thị trên menu
   const [navCategories, setNavCategories] = useState([])
 
@@ -174,6 +177,54 @@ export default function Header() {
     return () =>
       window.removeEventListener('wishlist:changed', initWishlist)
   }, [])
+
+  // ====== LOAD ADMIN NOTIFICATIONS ======
+  useEffect(() => {
+    const loadAdminNotifications = async () => {
+      if (!user || user.role !== 'admin') {
+        setHasAdminNotifications(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem('auth_token')
+        if (!token) return
+
+        // Kiểm tra yêu cầu đăng bài
+        const postsRes = await fetch(`${API_BASE_URL}/admin/pending-posts`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        })
+        const postsData = postsRes.ok ? await safeJson(postsRes) : null
+        const pendingPosts = Array.isArray(postsData?.data) ? postsData.data.length : 0
+
+        // Kiểm tra yêu cầu cấp quyền lessor
+        const lessorRes = await fetch(`${API_BASE_URL}/admin/pending-lessor`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        })
+        const lessorData = lessorRes.ok ? await safeJson(lessorRes) : null
+        const pendingLessor = Array.isArray(lessorData?.data) ? lessorData.data.length : 0
+
+        // Có notification nếu có yêu cầu nào
+        setHasAdminNotifications(pendingPosts > 0 || pendingLessor > 0)
+      } catch (e) {
+        console.error('Header: lỗi load admin notifications:', e)
+        setHasAdminNotifications(false)
+      }
+    }
+
+    loadAdminNotifications()
+
+    // Refresh mỗi 30 giây
+    const interval = setInterval(loadAdminNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [user])
+
 
   // ===== Đóng dropdown khi click ngoài (desktop) =====
   useEffect(() => {
@@ -403,6 +454,10 @@ export default function Header() {
                       avatarChar
                     )}
                   </div>
+                  {/* Admin notification badge */}
+                  {user.role === 'admin' && hasAdminNotifications && (
+                    <span className="header-avatar__notification" />
+                  )}
                 </button>
 
                 {menuOpen && (

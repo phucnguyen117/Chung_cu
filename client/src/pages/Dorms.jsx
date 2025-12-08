@@ -4,6 +4,28 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import '../assets/style/style.css'
 
+// ==== DÙNG CHUNG: Chuẩn hoá mọi kiểu object ảnh thành URL string ====
+function normalizeImageUrl(source) {
+  if (!source) return ''
+  if (typeof source === 'string') return source
+
+  if (source.full_url) return source.full_url
+  if (source.fullUrl) return source.fullUrl
+
+  if (source.url) return source.url
+  if (source.secure_url) return source.secure_url
+
+  if (source.file) {
+    if (source.file.url) return source.file.url
+    if (source.file.secure_url) return source.file.secure_url
+  }
+
+  if (source.image_url) return source.image_url
+  if (source.path) return source.path
+
+  return ''
+}
+
 // ===== CẤU HÌNH API =====
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
@@ -27,7 +49,7 @@ const AREA = [
   { v: '60-999', t: '> 60 m²' },
 ]
 
-// 2 nhóm này chưa có API riêng nên vẫn để cứng
+// 2 nhóm này vẫn để cứng
 const member = [
   { k: 'sinh-vien', t: 'Sinh viên' },
   { k: 'nu-uu-tien', t: 'Ưu tiên nữ' },
@@ -68,7 +90,7 @@ export default function DormsExplore() {
   const [provinceList, setProvinceList] = useState([])
   const [districtList, setDistrictList] = useState([])
 
-  // ==== FILTER STATE (user đang chỉnh) ====
+  // ==== FILTER STATE (được dùng để LỌC THỰC TẾ) ====
   const [q, setQ] = useState(qs.get('q') || '')
   const [province, setProvince] = useState(qs.get('province') || '')
   const [district, setDistrict] = useState(qs.get('district') || '')
@@ -96,7 +118,7 @@ export default function DormsExplore() {
   const [amenityOptions, setAmenityOptions] = useState([])
   const [envOptions, setEnvOptions] = useState([])
 
-  // sticky shadow cho thanh filter-top
+  // ==== STICKY BAR ====
   const barRef = useRef(null)
   useEffect(() => {
     const onScroll = () => {
@@ -107,6 +129,9 @@ export default function DormsExplore() {
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // ==== MOBILE FILTER OVERLAY ====
+  const [showMobileFilter, setShowMobileFilter] = useState(false)
 
   // ===== LẤY DANH SÁCH TỈNH =====
   useEffect(() => {
@@ -186,25 +211,94 @@ export default function DormsExplore() {
 
         const posts = res.data.posts || res.data.data || res.data || []
 
-        // 🔥 Chỉ lấy bài đã duyệt (published)
         const mapped = posts
           .filter(p => p.status === 'published')
-          .map(p => ({
-            id: p.id,
-            title: p.title,
-            price: Number(p.price) || 0,
-            area: Number(p.area) || 0,
-            addr: p.address || p.full_address || '',
-            img:
-              p.images?.[0]?.url ||
-              'https://via.placeholder.com/400x250?text=No+Image',
-            vip: p.is_vip === 1 || p.vip === 1,
-            time: new Date(p.created_at || Date.now()).toLocaleDateString(
-              'vi-VN',
-            ),
-            province_id: p.province_id || null,
-            district_id: p.district_id || null,
-          }))
+          .map(p => {
+            const candidates = []
+
+            if (p.cover_image) candidates.push(p.cover_image)
+            if (p.main_image_url) candidates.push(p.main_image_url)
+            if (p.thumbnail_url) candidates.push(p.thumbnail_url)
+            if (p.thumbnail) candidates.push(p.thumbnail)
+
+            if (Array.isArray(p.images) && p.images.length > 0) {
+              candidates.push(p.images[0])
+            }
+            if (Array.isArray(p.post_images) && p.post_images.length > 0) {
+              candidates.push(p.post_images[0])
+            }
+
+            let firstImg = ''
+            for (const c of candidates) {
+              const u = normalizeImageUrl(c)
+              if (u) {
+                firstImg = u
+                break
+              }
+            }
+
+            if (!firstImg) {
+              const anyUrl = Object.values(p).find(
+                v => typeof v === 'string' && /^https?:\/\//i.test(v),
+              )
+              if (anyUrl) firstImg = anyUrl
+            }
+
+            if (!firstImg) {
+              firstImg = 'https://via.placeholder.com/400x250?text=No+Image'
+            }
+
+            const rawAmenities = Array.isArray(p.amenities)
+              ? p.amenities
+              : Array.isArray(p.post_amenities)
+              ? p.post_amenities
+              : []
+
+            const normalizedAmenities = rawAmenities.map(a => ({
+              id: a.id,
+              name:
+                a.name ||
+                a.label ||
+                a.title ||
+                a.slug ||
+                a.key ||
+                '',
+            }))
+
+            const rawEnv = Array.isArray(p.environment_features)
+              ? p.environment_features
+              : Array.isArray(p.env_features)
+              ? p.env_features
+              : []
+
+            const normalizedEnv = rawEnv.map(e => ({
+              id: e.id,
+              name:
+                e.name ||
+                e.label ||
+                e.title ||
+                e.slug ||
+                e.key ||
+                '',
+            }))
+
+            return {
+              id: p.id,
+              title: p.title,
+              price: Number(p.price) || 0,
+              area: Number(p.area) || 0,
+              addr: p.address || p.full_address || '',
+              img: firstImg,
+              vip: p.is_vip === 1 || p.vip === 1,
+              time: new Date(
+                p.created_at || Date.now(),
+              ).toLocaleDateString('vi-VN'),
+              province_id: p.province_id || null,
+              district_id: p.district_id || null,
+              amenities: normalizedAmenities,
+              env_features: normalizedEnv,
+            }
+          })
 
         setRawItems(mapped)
       } catch (e) {
@@ -218,7 +312,7 @@ export default function DormsExplore() {
     fetchData()
   }, [])
 
-  // ===== FILTER + SORT + PAGINATE (chỉ chạy khi appliedVersion / page đổi) =====
+  // ===== FILTER + SORT + PAGINATE =====
   useEffect(() => {
     let data = [...rawItems]
 
@@ -251,9 +345,9 @@ export default function DormsExplore() {
     setTotal(data.length)
     const start = (page - 1) * PAGE_SIZE
     setItems(data.slice(start, start + PAGE_SIZE))
-  }, [rawItems, appliedVersion, page, q, province, district, price, area, sort])
+  }, [rawItems, appliedVersion, page])
 
-  // ===== SYNC QUERY LÊN URL (sau khi APPLY) =====
+  // ===== SYNC QUERY LÊN URL =====
   useEffect(() => {
     const p = new URLSearchParams()
     if (q) p.set('q', q)
@@ -265,7 +359,7 @@ export default function DormsExplore() {
     if (sort !== 'new') p.set('sort', sort)
     if (page > 1) p.set('page', String(page))
     nav({ search: p.toString() })
-  }, [appliedVersion, page, nav, q, province, district, price, area, amen, sort])
+  }, [appliedVersion, page, nav])
 
   const toggleAmen = k => {
     setAmen(s => (s.includes(k) ? s.filter(x => x !== k) : [...s, k]))
@@ -318,7 +412,6 @@ export default function DormsExplore() {
     if (k === 'district') setDistrict('')
     if (k === 'price') setPrice('')
     if (k === 'area') setArea('')
-
     if (k === 'amen') setAmen(s => s.filter(x => x !== v))
 
     setPage(1)
@@ -369,7 +462,7 @@ export default function DormsExplore() {
       <div className="rebar u-fullbleed" ref={barRef}>
         <div className="container rebar__inner">
           <form
-            className="rebar-search"
+            className="rebar-search rebar-search--compact"
             onSubmit={e => {
               e.preventDefault()
               applyFilters()
@@ -384,7 +477,6 @@ export default function DormsExplore() {
               />
             </div>
 
-            {/* Tỉnh/Thành (API) */}
             <select
               className="re-input"
               value={province}
@@ -401,7 +493,6 @@ export default function DormsExplore() {
               ))}
             </select>
 
-            {/* Quận/Huyện (API) */}
             <select
               className="re-input"
               value={district}
@@ -416,7 +507,6 @@ export default function DormsExplore() {
               ))}
             </select>
 
-            {/* Mức giá */}
             <select
               className="re-input"
               value={price}
@@ -429,7 +519,6 @@ export default function DormsExplore() {
               ))}
             </select>
 
-            {/* Diện tích */}
             <select
               className="re-input"
               value={area}
@@ -442,7 +531,6 @@ export default function DormsExplore() {
               ))}
             </select>
 
-            {/* Sắp xếp */}
             <select
               className="re-input"
               value={sort}
@@ -492,42 +580,76 @@ export default function DormsExplore() {
                 <p>{total.toLocaleString()} tin phù hợp</p>
               )}
             </div>
+
+            {/* nút lọc nhanh – ẩn trên desktop bằng CSS */}
+            <button
+              type="button"
+              className="re-btn re-btn--ghost re-results__filter-btn"
+              onClick={() => setShowMobileFilter(true)}
+            >
+              Bộ lọc nhanh
+            </button>
           </header>
 
           {error && <p className="re-error">{error}</p>}
 
           <div className="re-grid">
-            {items.map(it => (
-              <article
-                key={it.id}
-                className={'re-card' + (it.vip ? ' is-vip' : '')}
-              >
-                <div className="re-card__media">
-                  <img src={it.img} alt={it.title} />
-                  {it.vip && <span className="re-badge">VIP</span>}
-                </div>
-                <div className="re-card__body">
-                  <h3 className="re-card__title" title={it.title}>
-                    {it.title}
-                  </h3>
-                  <div className="re-card__meta">
-                    <span className="price">
-                      {it.price?.toLocaleString()} ₫/tháng
-                    </span>
-                    <span className="dot">•</span>
-                    <span>{it.area} m²</span>
-                    <span className="dot">•</span>
-                    <span>{it.addr}</span>
+            {items.map(it => {
+              const amenToShow =
+                (it.amenities && it.amenities.length
+                  ? it.amenities
+                  : it.env_features || []
+                ).slice(0, 3)
+
+              return (
+                <article
+                  key={it.id}
+                  className={'re-card' + (it.vip ? ' is-vip' : '')}
+                >
+                  <div className="re-card__media">
+                    <img src={it.img} alt={it.title} />
+                    {it.vip && <span className="re-badge">VIP</span>}
                   </div>
-                  <div className="re-card__foot">
-                    <span className="time">{it.time}</span>
-                    <Link to={`/post/${it.id}`} className="re-btn re-btn--line">
-                      Xem chi tiết
-                    </Link>
+                  <div className="re-card__body">
+                    <h3 className="re-card__title" title={it.title}>
+                      {it.title}
+                    </h3>
+                    <div className="re-card__meta">
+                      <span className="price">
+                        {it.price?.toLocaleString()} ₫/tháng
+                      </span>
+                      <span className="dot">•</span>
+                      <span>{it.area} m²</span>
+                      <span className="dot">•</span>
+                      <span>{it.addr}</span>
+                    </div>
+
+                    {amenToShow.length > 0 && (
+                      <div className="re-card__amen">
+                        {amenToShow.map(a => (
+                          <span
+                            key={a.id || a.name}
+                            className="re-card__tag"
+                          >
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="re-card__foot">
+                      <span className="time">{it.time}</span>
+                      <Link
+                        to={`/post/${it.id}`}
+                        className="re-btn re-btn--line"
+                      >
+                        Xem chi tiết
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
 
           {/* PHÂN TRANG */}
@@ -562,11 +684,11 @@ export default function DormsExplore() {
           </nav>
         </div>
 
-        {/* RIGHT: ASIDE FILTER */}
+        {/* RIGHT: ASIDE FILTER – desktop */}
         <aside className="re-aside">
           <div className="re-filtercard">
             <h3>Bộ lọc nhanh</h3>
- 
+
             <div className="re-field">
               <label>Tiện ích</label>
               <div className="re-checklist">
@@ -633,7 +755,11 @@ export default function DormsExplore() {
 
             <div className="re-field">
               <label>Sắp xếp</label>
-              <select value={sort} onChange={e => setSort(e.target.value)}>
+              <select
+                className="re-input"
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+              >
                 <option value="new">Tin mới</option>
                 <option value="price_asc">Giá tăng dần</option>
                 <option value="price_desc">Giá giảm dần</option>
@@ -659,6 +785,136 @@ export default function DormsExplore() {
             </div>
           </div>
         </aside>
+
+        {/* POPUP BỘ LỌC NHANH MOBILE */}
+        {showMobileFilter && (
+          <>
+            <div
+              className="mobile-filter-backdrop"
+              onClick={() => setShowMobileFilter(false)}
+            />
+            <div
+              className="mobile-filter-panel"
+              onClick={() => setShowMobileFilter(false)}
+            >
+              <div
+                className="mobile-filter-panel__inner"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="mobile-filter-panel__header">
+                  <h3>Bộ lọc nhanh</h3>
+                  <button
+                    type="button"
+                    className="mobile-filter-close"
+                    onClick={() => setShowMobileFilter(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mobile-filter-panel__body">
+                  <div className="re-field">
+                    <label>Tiện ích</label>
+                    <div className="re-checklist">
+                      {amenityOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Môi trường xung quanh</label>
+                    <div className="re-checklist">
+                      {envOptions.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Đối tượng</label>
+                    <div className="re-checklist">
+                      {member.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Chính sách</label>
+                    <div className="re-checklist">
+                      {policy.map(a => (
+                        <label key={a.k} className="re-check">
+                          <input
+                            type="checkbox"
+                            checked={amen.includes(a.k)}
+                            onChange={() => toggleAmen(a.k)}
+                          />
+                          <span>{a.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="re-field">
+                    <label>Sắp xếp</label>
+                    <select
+                      className="re-input"
+                      value={sort}
+                      onChange={e => setSort(e.target.value)}
+                    >
+                      <option value="new">Tin mới</option>
+                      <option value="price_asc">Giá tăng dần</option>
+                      <option value="price_desc">Giá giảm dần</option>
+                      <option value="area_desc">Diện tích lớn</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mobile-filter-panel__actions">
+                  <button
+                    type="button"
+                    className="re-btn re-btn--primary"
+                    onClick={() => {
+                      applyFilters()
+                      setShowMobileFilter(false)
+                    }}
+                  >
+                    Áp dụng
+                  </button>
+                  <button
+                    type="button"
+                    className="re-btn re-btn--ghost"
+                    onClick={clearAll}
+                  >
+                    Xoá bộ lọc
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </div>
   )

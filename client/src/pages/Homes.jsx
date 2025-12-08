@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import '../assets/style/style.css'
+import { api } from '@/api/axios'
 
 // meta cho section "Khám theo loại chỗ ở"
 const CATEGORY_META = {
@@ -38,14 +39,13 @@ export default function Homes() {
 
   // ===== Dữ liệu từ API =====
   const [featured, setFeatured] = useState([]) // tin nổi bật
-  const [blogs, setBlogs] = useState([]) // để trống, sau này có API blog thì gắn vào
-  const [stats, setStats] = useState({
-    posts: 0,
-    landlords: 0,
-    views: 0,
-  })
+  const [blogs, setBlogs] = useState([]) // bài blog mới nhất
+  const [stats, setStats] = useState({ posts: 0, landlords: 0, views: 0 })
   const [provincesList, setProvincesList] = useState([])
   const [categories, setCategories] = useState([])
+  const [loadingHome, setLoadingHome] = useState(true)
+  const [homeError, setHomeError] = useState('')
+  const [loadingBlogs, setLoadingBlogs] = useState(false)
 
   const guideRef = useRef(null)
   const scrollGuide = (dir) => {
@@ -57,71 +57,78 @@ export default function Homes() {
 
   // ===== LOAD DATA TỪ BACKEND =====
   useEffect(() => {
+    let mounted = true
     async function loadHome() {
+      setLoadingHome(true)
+      setHomeError('')
       try {
-        const [postsRes, statsRes, provRes, catRes] = await Promise.all([
-          fetch('/api/home/featured-posts'),
-          fetch('/api/home/stats'),
-          fetch('/api/provinces'),
-          fetch('/api/categories'),
+        const [postsRes, statsRes, provRes, catRes, blogsRes] = await Promise.all([
+          api.get('/home/featured-posts'),
+          api.get('/home/stats'),
+          api.get('/provinces'),
+          api.get('/categories'),
+          api.get('/blogs').catch(() => ({ data: { data: [] } })), // fallback nếu không có blog endpoint
         ])
 
+        if (!mounted) return
+
         // Tin nổi bật
-        if (postsRes.ok) {
-          const postsJson = await postsRes.json()
-          const list = postsJson.data || postsJson || []
-          const mapped = list.map((p) => ({
-            id: p.id,
-            title: p.title,
-            price: p.price,
-            area: p.area,
-            address: [
-              p.address,
-              p.ward?.name,
-              p.district?.name,
-              p.province?.name,
-            ]
-              .filter(Boolean)
-              .join(', '),
-            img:
-              p.cover_image_url ||
-              p.cover_image ||
-              (p.images && p.images[0]?.url) ||
-              'https://via.placeholder.com/1200x800?text=Apartment',
-          }))
-          setFeatured(mapped)
-        }
+        const postsData = postsRes?.data?.data || postsRes?.data || []
+        const mapped = (postsData || []).map((p) => ({
+          id: p.id,
+          title: p.title,
+          price: p.price,
+          area: p.area,
+          address: [p.address, p.ward?.name, p.district?.name, p.province?.name]
+            .filter(Boolean)
+            .join(', '),
+          img:
+            p.cover_image_url || p.cover_image || (p.images && p.images[0]?.url) ||
+            'https://via.placeholder.com/1200x800?text=Apartment',
+        }))
+        setFeatured(mapped)
 
         // Stats
-        if (statsRes.ok) {
-          const statsJson = await statsRes.json()
-          setStats({
-            posts: statsJson.total_posts || 0,
-            landlords: statsJson.total_users || 0,
-            views: statsJson.total_views || 0,
-          })
-        }
+        const statsData = statsRes?.data || {}
+        setStats({
+          posts: statsData.total_posts || 0,
+          landlords: statsData.total_users || 0,
+          views: statsData.total_views || 0,
+        })
 
         // Provinces
-        if (provRes.ok) {
-          const provJson = await provRes.json()
-          setProvincesList(provJson.data || provJson || [])
-        }
+        const provData = provRes?.data?.data || provRes?.data || []
+        setProvincesList(provData)
 
         // Categories
-        if (catRes.ok) {
-          const catJson = await catRes.json()
-          setCategories(catJson.data || catJson || [])
-        }
+        const catData = catRes?.data?.data || catRes?.data || []
+        setCategories(catData)
 
-        // Blogs: để trống, chờ API blog riêng
-        setBlogs([])
+        // Blogs – lấy mới nhất, sắp xếp theo ngày
+        const blogData = blogsRes?.data?.data || blogsRes?.data || []
+        const sortedBlogs = (blogData || [])
+          .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+          .slice(0, 4)
+          .map((b) => ({
+            id: b.id,
+            title: b.title,
+            excerpt: b.excerpt || b.description || 'Bài viết thú vị từ Homes.',
+            img: b.featured_image || b.cover_image || 'https://via.placeholder.com/600x400?text=Blog',
+            date: b.created_at ? new Date(b.created_at).toLocaleDateString('vi-VN') : '',
+          }))
+        setBlogs(sortedBlogs)
       } catch (err) {
         console.error('Lỗi load trang home:', err)
+        setHomeError('Không tải được dữ liệu. Vui lòng thử lại sau.')
+      } finally {
+        if (mounted) setLoadingHome(false)
       }
     }
 
     loadHome()
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const submitSearch = (e) => {
@@ -302,29 +309,42 @@ export default function Homes() {
         </div>
 
         <div className="homes-categories__list">
-          {displayedCategories.length === 0 && (
+          {loadingHome ? (
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 200,
+                    background: '#111827',
+                    borderRadius: 12,
+                  }}
+                />
+              ))}
+            </>
+          ) : categories.length === 0 ? (
             <p className="homes-note">Chưa có danh mục nào.</p>
+          ) : (
+            categories.slice(0, 4).map((cat) => {
+              const meta = CATEGORY_META[cat.slug] || {}
+              const href = meta.href || `/category/${cat.id}`
+              const img =
+                meta.img ||
+                'https://via.placeholder.com/400x400?text=Category'
+              const desc = meta.desc || 'Danh mục phòng cho thuê.'
+              return (
+                <Link key={cat.id} to={href} className="homes-cat">
+                  <div className="homes-cat__thumb">
+                    <img src={img} alt={cat.name} />
+                  </div>
+                  <div className="homes-cat__info">
+                    <h3>{cat.name}</h3>
+                    <p>{desc}</p>
+                  </div>
+                </Link>
+              )
+            })
           )}
-
-          {displayedCategories.map((cat) => {
-            const meta = CATEGORY_META[cat.slug] || {}
-            const href = meta.href || `/category/${cat.id}`
-            const img =
-              meta.img ||
-              'https://via.placeholder.com/400x400?text=Category'
-            const desc = meta.desc || 'Danh mục phòng cho thuê.'
-            return (
-              <Link key={cat.id} to={href} className="homes-cat">
-                <div className="homes-cat__thumb">
-                  <img src={img} alt={cat.name} />
-                </div>
-                <div className="homes-cat__info">
-                  <h3>{cat.name}</h3>
-                  <p>{desc}</p>
-                </div>
-              </Link>
-            )
-          })}
         </div>
       </section>
 
@@ -339,60 +359,84 @@ export default function Homes() {
         </div>
 
         <div className="homes-featured__grid">
-          {mainFeatured && (
-            <article className="homes-featured__main">
-              <div className="main-image">
-                <img src={mainFeatured.img} alt={mainFeatured.title} />
-                <span className="featured-chip">Nổi bật</span>
+          {loadingHome ? (
+            <>
+              <div className="homes-featured__main" style={{minHeight:200,background:'#0b1220',borderRadius:12}}>
+                <div style={{height:180,background:'#111827',borderRadius:8}} />
               </div>
-              <div className="main-body">
-                <h3 title={mainFeatured.title}>{mainFeatured.title}</h3>
-                <div className="main-meta">
-                  <span className="price">
-                    {Number(mainFeatured.price || 0).toLocaleString('vi-VN')} ₫/tháng
-                  </span>
-                  <span>•</span>
-                  <span>{mainFeatured.area} m²</span>
-                  <span>•</span>
-                  <span>{mainFeatured.address}</span>
-                </div>
-                <p>
-                  Phòng rộng, ánh sáng tốt, nội thất cơ bản. Phù hợp bạn trẻ làm việc văn phòng
-                  hoặc sinh viên muốn không gian riêng tư.
-                </p>
-                <div className="main-actions">
-                  <Link
-                    to={`/post/${mainFeatured.id}`}
-                    className="homes-btn homes-btn--primary"
-                  >
-                    Xem chi tiết
-                  </Link>
-                  <button className="homes-btn homes-btn--ghost">Lưu tin</button>
-                </div>
-              </div>
-            </article>
-          )}
-
-          <div className="homes-featured__list">
-            {otherFeatured.map((item) => (
-              <article key={item.id} className="homes-featured__item">
-                <div className="item-thumb">
-                  <img src={item.img} alt={item.title} />
-                </div>
-                <div className="item-body">
-                  <h4 title={item.title}>{item.title}</h4>
-                  <div className="item-meta">
-                    <span className="price">
-                      {Number(item.price || 0).toLocaleString('vi-VN')} ₫/tháng
-                    </span>
-                    <span>•</span>
-                    <span>{item.area} m²</span>
+              <div className="homes-featured__list">
+                {[1,2,3].map((i)=> (
+                  <div key={i} className="homes-featured__item" style={{display:'flex',gap:12,alignItems:'center'}}>
+                    <div style={{width:120,height:80,background:'#111827',borderRadius:8}} />
+                    <div style={{flex:1}}>
+                      <div style={{height:12,background:'#0f1724',marginBottom:6,borderRadius:6}} />
+                      <div style={{height:10,background:'#0f1724',width:'60%',borderRadius:6}} />
+                    </div>
                   </div>
-                  <p className="item-addr">{item.address}</p>
-                </div>
-              </article>
-            ))}
-          </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              {mainFeatured ? (
+                <article className="homes-featured__main">
+                  <div className="main-image">
+                    <img src={mainFeatured.img} alt={mainFeatured.title} />
+                    <span className="featured-chip">Nổi bật</span>
+                  </div>
+                  <div className="main-body">
+                    <h3 title={mainFeatured.title}>{mainFeatured.title}</h3>
+                    <div className="main-meta">
+                      <span className="price">
+                        {Number(mainFeatured.price || 0).toLocaleString('vi-VN')} ₫/tháng
+                      </span>
+                      <span>•</span>
+                      <span>{mainFeatured.area} m²</span>
+                      <span>•</span>
+                      <span>{mainFeatured.address}</span>
+                    </div>
+                    <p>
+                      Phòng rộng, ánh sáng tốt, nội thất cơ bản. Phù hợp bạn trẻ làm việc văn phòng
+                      hoặc sinh viên muốn không gian riêng tư.
+                    </p>
+                    <div className="main-actions">
+                      <Link
+                        to={`/post/${mainFeatured.id}`}
+                        className="homes-btn homes-btn--primary"
+                      >
+                        Xem chi tiết
+                      </Link>
+                      <button className="homes-btn homes-btn--ghost">Lưu tin</button>
+                    </div>
+                  </div>
+                </article>
+              ) : (
+                <p className="homes-note">Chưa có tin nổi bật.</p>
+              )}
+
+              <div className="homes-featured__list">
+                {otherFeatured.length === 0 && <p className="homes-note">Không có tin phụ.</p>}
+                {otherFeatured.map((item) => (
+                  <article key={item.id} className="homes-featured__item">
+                    <div className="item-thumb">
+                      <img src={item.img} alt={item.title} />
+                    </div>
+                    <div className="item-body">
+                      <h4 title={item.title}>{item.title}</h4>
+                      <div className="item-meta">
+                        <span className="price">
+                          {Number(item.price || 0).toLocaleString('vi-VN')} ₫/tháng
+                        </span>
+                        <span>•</span>
+                        <span>{item.area} m²</span>
+                      </div>
+                      <p className="item-addr">{item.address}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -438,7 +482,7 @@ export default function Homes() {
         </div>
       </section>
 
-      {/* ===== CẨM NANG THUÊ PHÒNG (CAROUSEL) – chỉ hiện khi có blog ===== */}
+      {/* ===== CẨM NANG THUÊ PHÒNG (CAROUSEL) ===== */}
       {blogs.length > 0 && (
         <section className="container homes-guide">
           <div className="homes-section-head">
@@ -465,7 +509,7 @@ export default function Homes() {
                 <article className="homes-guide__card" key={b.id}>
                   <div className="homes-guide__media">
                     <img src={b.img} alt={b.title} />
-                    <span className="homes-guide__date">03/10/2022</span>
+                    <span className="homes-guide__date">{b.date}</span>
                   </div>
                   <div className="homes-guide__body">
                     <h3 className="homes-guide__title">{b.title}</h3>
@@ -526,24 +570,6 @@ export default function Homes() {
                 </div>
               </a>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== BANNER ===== */}
-      <section className="u-fullbleed homes-promo">
-        <div className="container homes-promo__inner">
-          <div className="promo-text">
-            <h2>Đăng tin miễn phí cho chủ trọ mới</h2>
-            <p>
-              Thử Homes trong 7 ngày với ưu đãi đẩy tin miễn phí, giúp phòng trọ của bạn
-              tiếp cận đúng người đang cần.
-            </p>
-            <button className="homes-btn homes-btn--light">Đăng tin ngay</button>
-          </div>
-          <div className="promo-badge">
-            <span>7 ngày</span>
-            <small>Ưu đãi dùng thử</small>
           </div>
         </div>
       </section>

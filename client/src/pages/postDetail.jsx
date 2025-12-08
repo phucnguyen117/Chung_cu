@@ -28,6 +28,28 @@ function normalizeImageUrl(source) {
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
+/** ====== LOCAL WISHLIST HELPERS (dùng chung với các trang khác) ====== */
+function getWishlistIds() {
+  try {
+    const raw = localStorage.getItem('wishlist_posts')
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map(v => Number(v))
+      .filter(v => !Number.isNaN(v))
+  } catch (e) {
+    console.error('parse wishlist_posts error', e)
+    return []
+  }
+}
+
+function saveWishlistIds(ids) {
+  localStorage.setItem('wishlist_posts', JSON.stringify(ids))
+  // để header / icon tim các nơi khác biết thay đổi
+  window.dispatchEvent(new Event('wishlist:changed'))
+}
+
 export default function PostDetail() {
   const { id } = useParams()
 
@@ -51,6 +73,14 @@ export default function PostDetail() {
   const [reviewPage, setReviewPage] = useState(1)
   const REVIEWS_PER_PAGE = 3
 
+  // trạng thái yêu thích
+  const [isFavorite, setIsFavorite] = useState(false)
+
+  // ===== GALLERY MODAL STATE =====
+  const [showGalleryModal, setShowGalleryModal] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [zoomLevel, setZoomLevel] = useState(1) // 1 = fit, 2 = 2x zoom
+
   // ===== LOAD CHI TIẾT BÀI =====
   useEffect(() => {
     async function load() {
@@ -67,11 +97,10 @@ export default function PostDetail() {
         const rawPost = data.data || data
         console.log('POST DETAIL amenities =', rawPost.amenities)
         setPost(rawPost)
- 
-console.log('POST DETAIL =', rawPost)
-console.log('POST ID =', rawPost.id)
-console.log('POST amenities =', rawPost.amenities)
- 
+
+        console.log('POST DETAIL =', rawPost)
+        console.log('POST ID =', rawPost.id)
+        console.log('POST amenities =', rawPost.amenities)
 
         // đổi bài thì quay về page 1 review
         setReviewPage(1)
@@ -106,6 +135,14 @@ console.log('POST amenities =', rawPost.amenities)
 
     loadImages()
   }, [id])
+
+  // ===== INIT TRẠNG THÁI YÊU THÍCH KHI ĐÃ CÓ POST =====
+  useEffect(() => {
+    if (!post) return
+    const ids = getWishlistIds()
+    const pid = Number(post.id)
+    setIsFavorite(ids.includes(pid))
+  }, [post])
 
   // ====== dữ liệu hiển thị mềm dẻo ======
   const mainImage = useMemo(() => {
@@ -149,9 +186,7 @@ console.log('POST amenities =', rawPost.amenities)
 
     // 6. THÊM: tự dò field string nào là URL trong object post
     const anyUrl = Object.values(post).find(
-      (val) =>
-        typeof val === 'string' &&
-        /^https?:\/\//i.test(val) // bắt chuỗi bắt đầu bằng http/https
+      val => typeof val === 'string' && /^https?:\/\//i.test(val),
     )
     if (anyUrl) return anyUrl
 
@@ -201,24 +236,21 @@ console.log('POST amenities =', rawPost.amenities)
   // Tiện ích trong phòng (lấy trực tiếp từ API /posts/{id})
   const amenities = post?.amenities || []
   console.log('DEBUG amenities (from post) =', amenities)
+  console.log('DEBUG amenities.length =', amenities.length)
 
   // Môi trường xung quanh
   const envFeatures =
     post?.environment_features ||
     post?.env_features || // fallback nếu BE đặt tên khác
     []
+  console.log('DEBUG envFeatures =', envFeatures)
+  console.log('DEBUG envFeatures.length =', envFeatures.length)
 
   // Đối tượng phù hợp
-  const memberTargets =
-    post?.target_members ||
-    post?.members ||
-    []
+  const memberTargets = post?.target_members || post?.members || []
 
   // Chính sách / quy định
-  const policies =
-    post?.rental_policies ||
-    post?.policies ||
-    []
+  const policies = post?.rental_policies || post?.policies || []
 
   // avatar & phone chủ nhà (từ user của bài đăng)
   const hostAvatarUrl =
@@ -241,7 +273,7 @@ console.log('POST amenities =', rawPost.amenities)
       ratingList.length
         ? Math.ceil(ratingList.length / REVIEWS_PER_PAGE)
         : 1,
-    [ratingList.length]
+    [ratingList.length],
   )
 
   const pagedReviews = useMemo(() => {
@@ -250,7 +282,7 @@ console.log('POST amenities =', rawPost.amenities)
     return ratingList.slice(start, start + REVIEWS_PER_PAGE)
   }, [ratingList, reviewPage])
 
-  const renderStars = (value) => {
+  const renderStars = value => {
     const full = Math.round(value || 0)
     return (
       <span className="pd-stars">
@@ -263,7 +295,7 @@ console.log('POST amenities =', rawPost.amenities)
     )
   }
 
-  const handleImagesChange = (e) => {
+  const handleImagesChange = e => {
     const files = Array.from(e.target.files || [])
     if (files.length > 3) {
       alert('Bạn chỉ được chọn tối đa 3 ảnh.')
@@ -271,7 +303,7 @@ console.log('POST amenities =', rawPost.amenities)
     setImageFiles(files.slice(0, 3))
   }
 
-  const handleSubmitReview = async (e) => {
+  const handleSubmitReview = async e => {
     e.preventDefault()
     setReviewError('')
 
@@ -296,35 +328,34 @@ console.log('POST amenities =', rawPost.amenities)
       const formData = new FormData()
       formData.append('rating', ratingInput)
       formData.append('content', contentInput.trim())
-      imageFiles.forEach((file) => {
+      imageFiles.forEach(file => {
         formData.append('images[]', file)
       })
 
-const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-  body: formData,
-})
+      const res = await fetch(`${API_BASE_URL}/posts/${id}/reviews`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
 
-const text = await res.text()
-let data
-try {
-  data = JSON.parse(text)
-} catch {
-  console.error('RESP TEXT:', text)
-  throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
-}
+      const text = await res.text()
+      let data
+      try {
+        data = JSON.parse(text)
+      } catch {
+        console.error('RESP TEXT:', text)
+        throw new Error('Máy chủ trả về dữ liệu không hợp lệ.')
+      }
 
-if (!res.ok || data.status === false) {
-  throw new Error(data.message || 'Không gửi được đánh giá.')
-}
-
+      if (!res.ok || data.status === false) {
+        throw new Error(data.message || 'Không gửi được đánh giá.')
+      }
 
       const newReview = data.data || data.review || data
 
-      setPost((prev) => {
+      setPost(prev => {
         if (!prev) return prev
         const oldReviews = prev.reviews || []
         const newReviews = [newReview, ...oldReviews]
@@ -345,6 +376,94 @@ if (!res.ok || data.status === false) {
     } finally {
       setSubmittingReview(false)
     }
+  }
+
+  // ===== TOGGLE YÊU THÍCH CHO BÀI NÀY =====
+  const toggleFavorite = () => {
+    if (!post) return
+    const pid = Number(post.id)
+    if (!pid) return
+
+    let ids = getWishlistIds()
+    if (ids.includes(pid)) {
+      ids = ids.filter(x => x !== pid)
+      setIsFavorite(false)
+    } else {
+      ids = [...ids, pid]
+      setIsFavorite(true)
+    }
+    saveWishlistIds(ids)
+  }
+
+  // ===== GALLERY MODAL HANDLERS =====
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+
+  const openGalleryModal = (index = 0) => {
+    setActiveImageIndex(index)
+    setZoomLevel(1)
+    setDragOffset({ x: 0, y: 0 })
+    setShowGalleryModal(true)
+  }
+
+  const closeGalleryModal = () => {
+    setShowGalleryModal(false)
+    setZoomLevel(1)
+    setDragOffset({ x: 0, y: 0 })
+  }
+
+  const nextImage = () => {
+    setActiveImageIndex((prev) => (prev + 1) % galleryImages.length)
+    setZoomLevel(1)
+    setDragOffset({ x: 0, y: 0 })
+  }
+
+  const prevImage = () => {
+    setActiveImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)
+    setZoomLevel(1)
+    setDragOffset({ x: 0, y: 0 })
+  }
+
+  // Click để phóng to, click lần 2 để tắt modal
+  const toggleZoom = () => {
+    if (zoomLevel === 1) {
+      // Lần 1: zoom to 2x
+      setZoomLevel(2)
+      setDragOffset({ x: 0, y: 0 })
+    } else {
+      // Lần 2: close modal
+      closeGalleryModal()
+    }
+  }
+
+  // Drag để kéo xem ảnh khi đã zoom
+  const handleMouseDown = (e) => {
+    // Chỉ drag khi đã zoom
+    if (zoomLevel <= 1) return
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || zoomLevel <= 1) return
+    
+    const deltaX = e.clientX - dragStart.x
+    const deltaY = e.clientY - dragStart.y
+    
+    // Cập nhật drag offset từ vị trí hiện tại
+    setDragOffset((prevOffset) => ({
+      x: prevOffset.x + deltaX,
+      y: prevOffset.y + deltaY,
+    }))
+    
+    // Cập nhật drag start point
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
   }
 
   // ===== DEBUG LOG MỖI LẦN RENDER =====
@@ -377,11 +496,7 @@ if (!res.ok || data.status === false) {
     <main className="container container--main pd-page">
       {/* HERO ẢNH LỚN */}
       <section className="pd-hero">
-        <img
-          src={mainImage}
-          alt={post.title}
-          className="pd-hero__img"
-        />
+        <img src={mainImage} alt={post.title} className="pd-hero__img" />
         <div className="pd-hero__overlay" />
         <div className="pd-hero__content">
           <p className="pd-hero__topline">
@@ -415,10 +530,7 @@ if (!res.ok || data.status === false) {
                   <span className="pd-rating__count">
                     ({ratingCount} đánh giá)
                   </span>
-                  <Link
-                    to={`/posts/${post.id}/reviews`}
-                    className="pd-link"
-                  >
+                  <Link to={`/posts/${post.id}/reviews`} className="pd-link">
                     Xem chi tiết đánh giá
                   </Link>
                 </>
@@ -440,7 +552,7 @@ if (!res.ok || data.status === false) {
           {/* GALLERY NHỎ CUỘN NGANG */}
           {galleryImages && galleryImages.length > 1 && (
             <div className="pd-gallery">
-              {galleryImages.map((img) => {
+              {galleryImages.map((img, idx) => {
                 const imgUrl = normalizeImageUrl(img)
                 if (!imgUrl) return null
                 return (
@@ -448,12 +560,7 @@ if (!res.ok || data.status === false) {
                     key={img.id || img.full_url || img.url}
                     type="button"
                     className="pd-gallery__item"
-                    onClick={() => {
-                      setPost((prev) => ({
-                        ...prev,
-                        cover_image: imgUrl,
-                      }))
-                    }}
+                    onClick={() => openGalleryModal(idx)}
                   >
                     <img src={imgUrl} alt={post.title} />
                   </button>
@@ -494,6 +601,38 @@ if (!res.ok || data.status === false) {
             <article className="pd-card">
               <h2 className="pd-card__title">Mô tả chi tiết</h2>
               <div className="pd-content">{post.content}</div>
+
+              {/* TIỆN ÍCH TRONG MÔ TẢ */}
+              {amenities.length > 0 && (
+                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(148, 163, 184, 0.2)' }}>
+                  <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px', margin: '0 0 8px 0' }}>
+                    Tiện ích trong phòng
+                  </h3>
+                  <div className="pd-tags">
+                    {amenities.map(a => (
+                      <span key={a.id || a.name} className="pd-tag">
+                        {a.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* MÔI TRƯỜNG XUNG QUANH TRONG MÔ TẢ */}
+              {envFeatures.length > 0 && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(148, 163, 184, 0.2)' }}>
+                  <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px', margin: '0 0 8px 0' }}>
+                    Môi trường xung quanh
+                  </h3>
+                  <div className="pd-tags">
+                    {envFeatures.map(e => (
+                      <span key={e.id || e.name} className="pd-tag">
+                        {e.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </article>
           )}
 
@@ -504,7 +643,7 @@ if (!res.ok || data.status === false) {
                 Tiện ích trong phòng / căn hộ
               </h2>
               <div className="pd-tags">
-                {amenities.map((a) => (
+                {amenities.map(a => (
                   <span key={a.id || a.name} className="pd-tag">
                     {a.name}
                   </span>
@@ -518,7 +657,7 @@ if (!res.ok || data.status === false) {
             <article className="pd-card">
               <h2 className="pd-card__title">Môi trường xung quanh</h2>
               <div className="pd-tags">
-                {envFeatures.map((e) => (
+                {envFeatures.map(e => (
                   <span key={e.id || e.name} className="pd-tag">
                     {e.name}
                   </span>
@@ -531,7 +670,7 @@ if (!res.ok || data.status === false) {
             <article className="pd-card">
               <h2 className="pd-card__title">Đối tượng phù hợp</h2>
               <div className="pd-tags">
-                {memberTargets.map((m) => (
+                {memberTargets.map(m => (
                   <span key={m.id || m.name} className="pd-tag">
                     {m.name}
                   </span>
@@ -544,7 +683,7 @@ if (!res.ok || data.status === false) {
             <article className="pd-card">
               <h2 className="pd-card__title">Chính sách &amp; quy định</h2>
               <div className="pd-tags">
-                {policies.map((p) => (
+                {policies.map(p => (
                   <span key={p.id || p.name} className="pd-tag">
                     {p.name}
                   </span>
@@ -558,6 +697,18 @@ if (!res.ok || data.status === false) {
         <aside className="pd-aside">
           <section className="pd-card pd-contact">
             <h2 className="pd-card__title">Liên hệ đặt phòng</h2>
+
+            {/* NÚT YÊU THÍCH (TRÊN NÚT LIÊN HỆ) */}
+            <button
+              type="button"
+              className={
+                'pd-btn pd-btn--ghost pd-btn-fav' +
+                (isFavorite ? ' is-on' : '')
+              }
+              onClick={toggleFavorite}
+            >
+              {isFavorite ? 'Bỏ khỏi yêu thích ♥' : 'Lưu tin yêu thích ♡'}
+            </button>
 
             <div className="pd-host">
               <div className="pd-host__avatar">
@@ -588,7 +739,7 @@ if (!res.ok || data.status === false) {
               onClick={() => {
                 if (!hostPhone) {
                   alert(
-                    'Chưa có số điện thoại của chủ nhà trong dữ liệu API.'
+                    'Chưa có số điện thoại của chủ nhà trong dữ liệu API.',
                   )
                   return
                 }
@@ -612,7 +763,8 @@ if (!res.ok || data.status === false) {
             </button>
 
             <p className="pd-contact__note">
-              Vui lòng nói rõ bạn xem tin trên hệ thống để được ưu tiên hỗ trợ.
+              Vui lòng nói rõ bạn xem tin trên hệ thống để được ưu tiên hỗ
+              trợ.
             </p>
           </section>
 
@@ -660,7 +812,7 @@ if (!res.ok || data.status === false) {
           {/* LIST REVIEW: tối đa 3 / 1 trang */}
           {pagedReviews.length > 0 && (
             <div className="pd-reviews__list">
-              {pagedReviews.map((rv) => {
+              {pagedReviews.map(rv => {
                 const avatarUrl =
                   rv.user?.avatar_url ||
                   rv.user?.avatar ||
@@ -690,7 +842,7 @@ if (!res.ok || data.status === false) {
                           {rv.created_at && (
                             <span>
                               {new Date(
-                                rv.created_at
+                                rv.created_at,
                               ).toLocaleString('vi-VN')}
                             </span>
                           )}
@@ -699,15 +851,13 @@ if (!res.ok || data.status === false) {
                     </div>
 
                     {rv.content && (
-                      <p className="pd-review-item__content">
-                        {rv.content}
-                      </p>
+                      <p className="pd-review-item__content">{rv.content}</p>
                     )}
 
                     {/* Block ảnh review nếu sau này có */}
                     {rv.images && rv.images.length > 0 && (
                       <div className="pd-review-item__images">
-                        {rv.images.slice(0, 3).map((img) => (
+                        {rv.images.slice(0, 3).map(img => (
                           <img
                             key={img.id || img.url}
                             src={normalizeImageUrl(img)}
@@ -727,8 +877,8 @@ if (!res.ok || data.status === false) {
             <div className="pd-reviews__pagination">
               {Array.from(
                 { length: totalReviewPages },
-                (_, idx) => idx + 1
-              ).map((pageNum) => (
+                (_, idx) => idx + 1,
+              ).map(pageNum => (
                 <button
                   key={pageNum}
                   type="button"
@@ -778,7 +928,7 @@ if (!res.ok || data.status === false) {
               <textarea
                 rows="4"
                 value={contentInput}
-                onChange={(e) => setContentInput(e.target.value)}
+                onChange={e => setContentInput(e.target.value)}
                 placeholder="Chia sẻ trải nghiệm thật của bạn về phòng này..."
               />
             </div>
@@ -816,6 +966,135 @@ if (!res.ok || data.status === false) {
           </form>
         </article>
       </section>
+
+      {/* ===== GALLERY MODAL ===== */}
+      {showGalleryModal && galleryImages.length > 0 && (
+        <div
+          className="pd-gallery-modal-overlay"
+          onClick={closeGalleryModal}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <div
+            className="pd-gallery-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* HEADER: ONLY CLOSE BUTTON */}
+            <div className="pd-gallery-modal__header">
+              <button
+                type="button"
+                className="pd-gallery-modal__close"
+                onClick={closeGalleryModal}
+                title="Đóng"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ZOOM HINT */}
+            {zoomLevel === 1 && (
+              <div className="pd-gallery-modal__hint">
+                Click ảnh để phóng to, click lần nữa để tắt
+              </div>
+            )}
+
+            {/* DRAG HINT - Khi đã zoom */}
+            {zoomLevel > 1 && (
+              <div className="pd-gallery-modal__hint" style={{ animation: 'none', opacity: 0.6 }}>
+                Kéo chuột để xem các vùng khác
+              </div>
+            )}
+
+            {/* MAIN IMAGE VIEWER */}
+            <div
+              className="pd-gallery-modal__viewer"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{
+                cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+              }}
+            >
+              <div
+                className={`pd-gallery-modal__image-container zoom-${zoomLevel}`}
+                style={{
+                  transform: zoomLevel > 1 ? `translate(${dragOffset.x}px, ${dragOffset.y}px)` : 'none',
+                }}
+              >
+                <img
+                  src={normalizeImageUrl(galleryImages[activeImageIndex])}
+                  alt={`View ${activeImageIndex + 1}`}
+                  className="pd-gallery-modal__image"
+                  onClick={toggleZoom}
+                  style={{
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                />
+              </div>
+
+              {/* LEFT ARROW */}
+              {galleryImages.length > 1 && zoomLevel === 1 && (
+                <button
+                  type="button"
+                  className="pd-gallery-modal__nav pd-gallery-modal__nav--prev"
+                  onClick={prevImage}
+                  title="Ảnh trước"
+                >
+                  ‹
+                </button>
+              )}
+
+              {/* RIGHT ARROW */}
+              {galleryImages.length > 1 && zoomLevel === 1 && (
+                <button
+                  type="button"
+                  className="pd-gallery-modal__nav pd-gallery-modal__nav--next"
+                  onClick={nextImage}
+                  title="Ảnh tiếp"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {/* THUMBNAIL LIST BELOW */}
+            {galleryImages.length > 1 && zoomLevel === 1 && (
+              <div className="pd-gallery-modal__thumbs">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={
+                      'pd-gallery-modal__thumb' +
+                      (idx === activeImageIndex ? ' is-active' : '')
+                    }
+                    onClick={() => {
+                      setActiveImageIndex(idx)
+                      setZoomLevel(1)
+                      setDragOffset({ x: 0, y: 0 })
+                    }}
+                  >
+                    <img
+                      src={normalizeImageUrl(img)}
+                      alt={`Thumb ${idx + 1}`}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* IMAGE COUNTER */}
+            {galleryImages.length > 1 && zoomLevel === 1 && (
+              <div className="pd-gallery-modal__counter">
+                {activeImageIndex + 1} / {galleryImages.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
