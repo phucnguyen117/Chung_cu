@@ -39,7 +39,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
     try {
       setLoading(true)
 
-      const res = await api.post('/api/login', {
+      const res = await api.post('/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

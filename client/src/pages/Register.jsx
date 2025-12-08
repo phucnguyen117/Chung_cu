@@ -98,7 +98,7 @@ export default function Register({ onClose , onSwitchToLogin }) {
        * Lỗi validate (422):
        *  { status: false, message: "Lỗi xác thực dữ liệu", errors: { field: [...] } }
        */
-      const res = await api.post('/api/register', {
+      const res = await api.post('/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
