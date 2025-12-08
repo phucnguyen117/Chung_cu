@@ -39,45 +39,34 @@ export default function Login({ onClose, onSwitchToRegister }) {
     try {
       setLoading(true)
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
       const res = await axios.post(`${API_URL}/login`, {
-        method: 'POST',
+        email,
+        password
+      }, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const text = await res.text()
-      let data = null
-      try {
-        data = JSON.parse(text)
-      } catch {
-        data = null
-      }
-
-      if (!res.ok || data?.status === false) {
-        if (res.status === 422 && data?.errors) {
-          const firstError =
-            Object.values(data.errors)[0]?.[0] || 'Lỗi xác thực dữ liệu.'
-          throw new Error(firstError)
         }
-        throw new Error(
-          data?.message || 'Đăng nhập thất bại, vui lòng kiểm tra lại.'
-        )
+      });
+
+      const data = res.data;
+
+      if (res.status !== 200 || data?.status === false) {
+        throw new Error(data?.message || 'Đăng nhập thất bại.')
       }
 
       const token =
         data?.access_token ||
         data?.token ||
         data?.data?.access_token ||
-        data?.data?.token
+        data?.data?.token;
 
       const user =
         data?.user ||
         data?.data?.user ||
         data?.data ||
-        null
+        null;
 
       if (token) localStorage.setItem('access_token', token)
       if (user) localStorage.setItem('auth_user', JSON.stringify(user))
@@ -86,6 +75,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
       localStorage.removeItem('user')
 
       onClose && onClose()
+
     } catch (err) {
       console.error(err)
       setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
