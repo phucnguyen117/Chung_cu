@@ -58,7 +58,8 @@ const Chatbot = () => {
 
         try {
             // Giả lập API call (Thay thế bằng URL thật của bạn)
-            const response = await axios.post('http://localhost:8000/api/chatbot', {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+            const response = await axios.post(`${API_URL}/chatbot`, {
                 message: userMsg.text
             });
 
