@@ -36,6 +36,18 @@ import AdminPostCreate from './pages/admin/AdminPostCreate.jsx'
 import AdminPostEdit from './pages/admin/AdminPostEdit.jsx'
 import AdminBlogList from './pages/admin/AdminBlogList'
 import AdminBlogCreate from './pages/admin/AdminBlogCreate'
+
+// Lessor pages
+import LessorLayout from './pages/lessor/LessorLayout.jsx'
+import LessorDashboard from './pages/lessor/LessorDashboard.jsx'
+import LessorPosts from './pages/lessor/LessorPosts.jsx'
+import LessorPostCreate from './pages/lessor/LessorPostCreate.jsx'
+import LessorPostEdit from './pages/lessor/LessorPostEdit.jsx'
+import LessorReviews from './pages/lessor/LessorReviews.jsx'
+import LessorCategories from './pages/lessor/LessorCategories.jsx'
+import LessorAmenities from './pages/lessor/LessorAmenities.jsx'
+import LessorAppointments from './pages/lessor/LessorAppointments.jsx'
+
 // Layout cho trang người dùng (có Header + Footer)
 function Layout() {
   return (
@@ -91,6 +103,22 @@ export const router = createBrowserRouter([
       { path: 'blog-list', element: <AdminBlogList/> },
       { path: 'blog-list/create', element: <AdminBlogCreate/>
       }
+    ],
+  },
+
+  // ========== NHÓM ROUTE LESSOR (KHÔNG Header/Footer) ==========
+  {
+    path: '/lessor',
+    element: <LessorLayout />,
+    children: [
+      { index: true, element: <LessorDashboard /> },
+      { path: 'posts', element: <LessorPosts /> },
+      { path: 'posts/create', element: <LessorPostCreate /> },
+      { path: 'posts/:id/edit', element: <LessorPostEdit /> },
+      { path: 'reviews', element: <LessorReviews /> },
+      { path: 'appointments', element: <LessorAppointments /> },
+      { path: 'categories', element: <LessorCategories /> },
+      { path: 'amenities', element: <LessorAmenities /> },
     ],
   },
 ])

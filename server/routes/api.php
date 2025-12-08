@@ -21,6 +21,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BlogTagController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\LessorController;
 use Illuminate\Support\Facades\Route;
 
 // ================== CHATBOT ==================
@@ -219,6 +220,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // =================================================================
     Route::post('/lessor/apply', [LessorApplicationController::class, 'apply']);
     Route::get('/lessor/my', [LessorApplicationController::class, 'myRequest']);
+
+    // =================================================================
+    // ================== LESSOR DASHBOARD (lessor) =====================
+    // =================================================================
+    Route::get('/lessor/stats', [LessorController::class, 'stats']);
+    Route::get('/lessor/reviews', [LessorController::class, 'reviews']);
 
     // =================================================================
     // ================== BLOGS / TAGS (admin) ==========================

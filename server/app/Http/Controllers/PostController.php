@@ -97,10 +97,10 @@ class PostController extends Controller
     // =========================
     // GET api/posts  (danh sách)
     // =========================
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $posts = Post::with([
+            $query = Post::with([
                     'user',
                     'category:id,name',
                     'province:id,name',
@@ -110,9 +110,56 @@ class PostController extends Controller
                     'images.file',
                 ])
                 ->withCount('reviews')
-                ->withAvg('reviews as reviews_avg', 'rating')
-                ->orderBy('created_at', 'desc')
-                ->get();
+                ->withAvg('reviews as reviews_avg', 'rating');
+
+            // Nếu có tham số my_posts=1, chỉ lấy bài đăng của user hiện tại
+            if ($request->query('my_posts') == '1' && Auth::check()) {
+                $query->where('user_id', Auth::id());
+            }
+
+            // Lọc theo status nếu có
+            if ($request->has('status') && $request->query('status') !== 'all') {
+                $query->where('status', $request->query('status'));
+            }
+
+            // Lọc theo category_id nếu có
+            if ($request->has('category_id') && $request->query('category_id')) {
+                $query->where('category_id', $request->query('category_id'));
+            }
+
+            // Tìm kiếm theo q (title, address)
+            if ($request->has('q') && $request->query('q')) {
+                $search = $request->query('q');
+                $query->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('address', 'like', "%{$search}%")
+                      ->orWhere('id', $search);
+                });
+            }
+
+            // Phân trang nếu có
+            $perPage = (int) $request->query('per_page', 15);
+            $page = (int) $request->query('page', 1);
+            
+            if ($perPage > 0 && $request->has('page')) {
+                $posts = $query->orderBy('created_at', 'desc')->paginate($perPage);
+                $posts->getCollection()->transform(function ($post) {
+                    return $this->preparePostForResponse($post);
+                });
+                
+                return response()->json([
+                    'status' => true,
+                    'data'   => $posts->items(),
+                    'meta'   => [
+                        'current_page' => $posts->currentPage(),
+                        'last_page' => $posts->lastPage(),
+                        'per_page' => $posts->perPage(),
+                        'total' => $posts->total(),
+                    ],
+                ]);
+            }
+
+            $posts = $query->orderBy('created_at', 'desc')->get();
 
             // Chuẩn hoá ảnh + main_image_url cho từng bài
             $posts = $posts->map(function ($post) {
