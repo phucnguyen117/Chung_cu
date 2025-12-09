@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import '../assets/style/pages/login.css'
 
+const API_URL = 
+  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+
 export default function Login({ onClose, onSwitchToRegister }) {
   const location = useLocation()
   const from = location.pathname + location.search
@@ -37,7 +40,6 @@ export default function Login({ onClose, onSwitchToRegister }) {
 
     try {
       setLoading(true)
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
