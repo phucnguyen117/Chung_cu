@@ -50,7 +50,7 @@ export default function LessorDashboard() {
 
   // LOAD STATS 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         // API: GET /api/lessor/stats hoặc tính từ posts của lessor
         const token = localStorage.getItem('access_token')
@@ -92,7 +92,7 @@ export default function LessorDashboard() {
 
   //  LOAD CATEGORIES 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         // API: GET /api/categories
         // Gợi ý response: { data: [{id, name, slug}, ...] }
@@ -109,7 +109,7 @@ export default function LessorDashboard() {
 
   //  LOAD POSTS (bảng posts - chỉ của lessor) 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         setLoading(true)
         setError('')
@@ -129,7 +129,8 @@ export default function LessorDashboard() {
 
         // API: GET /api/posts?my_posts=1 hoặc /api/lessor/posts
         // Lessor chỉ xem bài đăng của chính mình
-        const res = await fetch(`/api/posts?my_posts=1&${params.toString()}`, {
+        const res = await fetch(`/api/lessor/posts?${params.toString()}`, {
+
           headers: {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
@@ -157,7 +158,7 @@ export default function LessorDashboard() {
 
   //  REVIEWS SUMMARY (avg stars - chỉ của lessor) 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         const token = localStorage.getItem('access_token')
         if (!token) return
@@ -201,54 +202,88 @@ export default function LessorDashboard() {
 
   //  CHART DATA 
   const barData = useMemo(() => {
-    const categories = ['apartment', 'house', 'room']
+    // ===== 4 loại =====
+    const categories = ['apartment', 'house', 'room', 'dorm']
+
     const labels = {
       apartment: 'Căn hộ',
       house: 'Nhà nguyên căn',
       room: 'Phòng trọ',
+      dorm: 'Ký túc xá',
     }
+
     const result = {
       apartment: { published: 0, pending: 0, draft: 0 },
       house: { published: 0, pending: 0, draft: 0 },
       room: { published: 0, pending: 0, draft: 0 },
+      dorm: { published: 0, pending: 0, draft: 0 },
     }
 
+    // ===== ĐẾM POSTS =====
     posts.forEach(p => {
-      const name = p.category?.name?.toLowerCase?.() || ''
-      const status = (p.status || '').toLowerCase()
+      const name = (p.category?.name || '').toLowerCase()
+      const status = (p.status || 'draft').toLowerCase()
+
       let key = 'room'
+
       if (name.includes('căn hộ') || name.includes('apartment') || name.includes('chung cư')) {
         key = 'apartment'
       } else if (name.includes('nhà')) {
         key = 'house'
+      } else if (
+        name.includes('ký túc') ||
+        name.includes('ky tuc') ||
+        name.includes('dorm')
+      ) {
+        key = 'dorm'
       }
 
-      if (status === 'published') result[key].published += 1
-      else if (status === 'pending') result[key].pending += 1
-      else result[key].draft += 1
+      if (status === 'published') result[key].published++
+      else if (status === 'pending') result[key].pending++
+      else result[key].draft++
     })
 
+    // ===== BUILD SERIES =====
     const series = categories.map(key => {
       const totals = result[key]
-      const total = totals.published + totals.pending + totals.draft
       return {
         key,
         label: labels[key],
-        total,
         breakdown: [
-          { status: 'published', label: 'Đang cho thuê', value: totals.published, color: 'var(--chart-green, #34d399)' },
-          { status: 'pending', label: 'Chờ duyệt', value: totals.pending, color: 'var(--chart-amber, #fbbf24)' },
-          { status: 'draft', label: 'Còn trống', value: totals.draft, color: 'var(--chart-slate, #94a3b8)' },
+          {
+            status: 'published',
+            label: 'Đang cho thuê',
+            value: totals.published,
+            color: '#34d399',
+          },
+          {
+            status: 'pending',
+            label: 'Chờ duyệt',
+            value: totals.pending,
+            color: '#fbbf24',
+          },
+          {
+            status: 'draft',
+            label: 'Còn trống',
+            value: totals.draft,
+            color: '#94a3b8',
+          },
         ],
       }
     })
 
-    const max = Math.max(
+    // ===== MAX + 1 ĐỂ KHÔNG CHẠM TRẦN =====
+    const rawMax = Math.max(
       ...series.flatMap(s => s.breakdown.map(b => b.value)),
-      1,
+      0,
     )
-    return { series, max }
+
+    return {
+      series,
+      max: rawMax + 1,
+    }
   }, [posts])
+
 
   const ratingsBars = useMemo(() => {
     const counts = reviewSummary.ratings_count || {}
@@ -311,12 +346,15 @@ export default function LessorDashboard() {
               <div key={item.key} className="chart-bar chart-bar--group">
                 <div className="chart-bar__group">
                   {item.breakdown.map(part => (
-                    <div className="chart-bar__group-item" key={part.status}>
+                    <div className="chart-bar__group-item" key={part.status} data-tooltip={`${item.label} · ${part.label}: ${part.value}`}>
                       <div
                         className="chart-bar__col"
+                        data-value={part.value}
+                        data-max={barData.max}
                         style={{
                           background: part.color,
-                          height: `${(part.value / barData.max) * 100}%`,
+                          height: part.value === 0 ? '6px' : `${(part.value / barData.max) * 100}%`,
+                          animationDelay: `${item.key.length * 0.05}s`,
                         }}
                         aria-label={`${item.label} - ${part.label}: ${part.value}`}
                         title={`${item.label} - ${part.label}: ${part.value}`}
@@ -492,9 +530,8 @@ export default function LessorDashboard() {
                       <td>{post.category?.name || '—'}</td>
                       <td>
                         <span
-                          className={`lessor-badge lessor-badge--${
-                            post.status || 'pending'
-                          }`}
+                          className={`lessor-badge lessor-badge--${post.status || 'pending'
+                            }`}
                         >
                           {post.status}
                         </span>
@@ -502,8 +539,8 @@ export default function LessorDashboard() {
                       <td>
                         {post.published_at
                           ? new Date(
-                              post.published_at,
-                            ).toLocaleDateString('vi-VN')
+                            post.published_at,
+                          ).toLocaleDateString('vi-VN')
                           : '—'}
                       </td>
                       <td className="lessor-td-actions">

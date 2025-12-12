@@ -97,90 +97,89 @@ class PostController extends Controller
     // =========================
     // GET api/posts  (danh sách)
     // =========================
-    public function index(Request $request)
-    {
-        try {
-            $query = Post::with([
-                    'user',
-                    'category:id,name',
-                    'province:id,name',
-                    'district:id,name',
-                    'ward:id,name',
-                    'thumbnail',
-                    'images.file',
-                ])
-                ->withCount('reviews')
-                ->withAvg('reviews as reviews_avg', 'rating');
+public function index(Request $request)
+{
+    try {
+        $user = Auth::user();
 
-            // Nếu có tham số my_posts=1, chỉ lấy bài đăng của user hiện tại
-            if ($request->query('my_posts') == '1' && Auth::check()) {
-                $query->where('user_id', Auth::id());
-            }
-
-            // Lọc theo status nếu có
-            if ($request->has('status') && $request->query('status') !== 'all') {
-                $query->where('status', $request->query('status'));
-            }
-
-            // Lọc theo category_id nếu có
-            if ($request->has('category_id') && $request->query('category_id')) {
-                $query->where('category_id', $request->query('category_id'));
-            }
-
-            // Tìm kiếm theo q (title, address)
-            if ($request->has('q') && $request->query('q')) {
-                $search = $request->query('q');
-                $query->where(function($q) use ($search) {
-                    $q->where('title', 'like', "%{$search}%")
-                      ->orWhere('address', 'like', "%{$search}%")
-                      ->orWhere('id', $search);
-                });
-            }
-
-            // Phân trang nếu có
-            $perPage = (int) $request->query('per_page', 15);
-            $page = (int) $request->query('page', 1);
-            
-            if ($perPage > 0 && $request->has('page')) {
-                $posts = $query->orderBy('created_at', 'desc')->paginate($perPage);
-                $posts->getCollection()->transform(function ($post) {
-                    return $this->preparePostForResponse($post);
-                });
-                
-                return response()->json([
-                    'status' => true,
-                    'data'   => $posts->items(),
-                    'meta'   => [
-                        'current_page' => $posts->currentPage(),
-                        'last_page' => $posts->lastPage(),
-                        'per_page' => $posts->perPage(),
-                        'total' => $posts->total(),
-                    ],
-                ]);
-            }
-
-            $posts = $query->orderBy('created_at', 'desc')->get();
-
-            // Chuẩn hoá ảnh + main_image_url cho từng bài
-            $posts = $posts->map(function ($post) {
-                return $this->preparePostForResponse($post);
-            });
-
+        if (!$user) {
             return response()->json([
-                'status' => true,
-                'data'   => $posts,
-            ]);
-        } catch (Exception $e) {
-            Log::error('Lỗi lấy danh sách bài viết: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'Không thể tải danh sách.',
-            ], 500);
+                'status' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
         }
+
+        $query = Post::with([
+            'user',
+            'category:id,name',
+            'province:id,name',
+            'district:id,name',
+            'ward:id,name',
+            'thumbnail',
+            'images.file',
+        ])
+        ->withCount('reviews')
+        ->withAvg('reviews as reviews_avg', 'rating');
+
+        // 🔐 PHÂN QUYỀN CHUẨN
+        if ($user->role === 'lessor') {
+            // Lessor chỉ thấy bài của mình
+            $query->where('user_id', $user->id);
+        } elseif ($user->role !== 'admin') {
+            // User thường → không được xem danh sách
+            return response()->json([
+                'status' => false,
+                'message' => 'Không có quyền truy cập'
+            ], 403);
+        }
+
+        // ===== FILTER =====
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhere('id', $search);
+            });
+        }
+
+        $posts = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        $posts->getCollection()->transform(fn ($post) =>
+            $this->preparePostForResponse($post)
+        );
+
+        return response()->json([
+            'status' => true,
+            'data'   => $posts->items(),
+            'meta'   => [
+                'current_page' => $posts->currentPage(),
+                'last_page'    => $posts->lastPage(),
+                'total'        => $posts->total(),
+            ],
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Post index error', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Không thể tải danh sách bài viết',
+        ], 500);
     }
+}
+
+
 
     // =========================
     // GET api/posts/{id}  (chi tiết)

@@ -28,6 +28,7 @@ Route::options('/{any}', function () {
     return response()->json([], 200);
 })->where('any', '.*');
 
+
 // ================== CHATBOT ==================
 Route::post('/chatbot', [ChatbotController::class, 'sendMessage']);
 
@@ -85,9 +86,8 @@ Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetToke
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
 
-
 // =====================================================================
-// ================== CÁC ROUTE CẦN AUTH SANCTUM =======================
+// ================== ROUTE CẦN AUTH SANCTUM ============================
 // =====================================================================
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -106,11 +106,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('user/request-lessor', [UserController::class, 'requestLessor']);
     Route::get('user/lessor-request-status', [UserController::class, 'getLessorRequestStatus']);
 
+
     // ================== REVIEW TREE ==================
     Route::get('/posts/{postId}/review-tree', [ReviewController::class, 'tree']);
-
     Route::post('/reviews/{id}/replies', [ReviewController::class, 'replyToReview']);
-
     Route::post('/replies/{id}/child', [ReviewController::class, 'replyToReply']);
 
 
@@ -119,32 +118,34 @@ Route::middleware('auth:sanctum')->group(function () {
     // =================================================================
     Route::prefix('admin')->group(function () {
 
-        // Dashboard
         Route::get('/stats', [AdminDashboardController::class, 'stats']);
         Route::get('/posts', [AdminDashboardController::class, 'posts']);
 
-        // User admin
         Route::get('/users', [UserController::class, 'adminIndex']);
         Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
 
-        // === Lessor Request (UserController) ===
         Route::get('/lessor-requests', [UserController::class, 'adminLessorRequests']);
         Route::post('/lessor-requests/{id}/approve', [UserController::class, 'approveLessorRequest']);
         Route::post('/lessor-requests/{id}/reject', [UserController::class, 'rejectLessorRequest']);
         Route::delete('/lessor-requests/{id}', [UserController::class, 'deleteLessorRequest']);
 
-        // === Lessor Application (LessorApplicationController) ===
         Route::get('/lessor/requests', [LessorApplicationController::class, 'adminIndex']);
         Route::post('/lessor/approve/{id}', [LessorApplicationController::class, 'approve']);
         Route::post('/lessor/reject/{id}', [LessorApplicationController::class, 'reject']);
         Route::delete('/lessor/delete/{id}', [LessorApplicationController::class, 'delete']);
 
-        // Reviews admin
         Route::get('/reviews', [ReviewController::class, 'adminIndex']);
         Route::patch('/reviews/{id}/toggle', [ReviewController::class, 'adminToggleVisibility']);
         Route::delete('/reviews/{id}', [ReviewController::class, 'adminDestroy']);
     });
 
+
+    // =================================================================
+    // ================== 🔥 LESSOR POSTS (CHỈ THÊM CHỖ NÀY) 🔥 ==========
+    // =================================================================
+    // LESSOR  → chỉ thấy post của chính mình
+    // ADMIN   → thấy toàn bộ
+    Route::get('/lessor/posts', [PostController::class, 'index']);
 
 
     // =================================================================
@@ -155,7 +156,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
     Route::post('/posts/{id}/thumbnail', [PostController::class, 'uploadThumbnail']);
 
-    // Post Images
     Route::post('/posts/{postId}/images', [PostImageController::class, 'store']);
     Route::put('/posts/images/{id}', [PostImageController::class, 'update']);
     Route::delete('/posts/images/{id}', [PostImageController::class, 'destroy']);
@@ -186,22 +186,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // =================================================================
-    // ================== AMENITIES & ENV ===============================
-    // =================================================================
-    Route::get('/posts/{postId}/amenities', [PostAmenityController::class, 'index']);
-    Route::post('/posts/{postId}/amenities', [PostAmenityController::class, 'attach']);
-    Route::delete('/posts/{postId}/amenities', [PostAmenityController::class, 'detach']);
-
-    Route::post('/environment-features', [EnvironmentFeatureController::class, 'store']);
-    Route::put('/environment-features/{id}', [EnvironmentFeatureController::class, 'update']);
-    Route::delete('/environment-features/{id}', [EnvironmentFeatureController::class, 'destroy']);
-
-    Route::get('/posts/{postId}/environment', [PostEnvironmentController::class, 'index']);
-    Route::post('/posts/{postId}/environment', [PostEnvironmentController::class, 'attach']);
-    Route::delete('/posts/{postId}/environment', [PostEnvironmentController::class, 'detach']);
-
-
-    // =================================================================
     // ================== SAVED POSTS ==================================
     // =================================================================
     Route::get('/saved-posts', [SavedPostController::class, 'index']);
@@ -209,17 +193,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/saved-posts/{postId}', [SavedPostController::class, 'unsave']);
     Route::get('/saved-posts/ids', [SavedPostController::class, 'getSavedIds']);
     Route::get('/saved-posts/check/{postId}', [SavedPostController::class, 'checkSaved']);
-
-
-    // =================================================================
-    // ================== REVIEWS ======================================
-    // =================================================================
-    Route::get('/reviews', [ReviewController::class, 'all'])
-        ->withoutMiddleware('auth:sanctum');
-
-    Route::post('/posts/{post}/reviews', [ReviewController::class, 'store']);
-    Route::put('/reviews/{id}', [ReviewController::class, 'update']);
-    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
 
     // =================================================================
@@ -244,24 +217,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // =================================================================
-    // ================== LESSOR APPLICATION ============================
-    // =================================================================
-    Route::post('/lessor/apply', [LessorApplicationController::class, 'apply']);
-    Route::get('/lessor/my', [LessorApplicationController::class, 'myRequest']);
-
-
-    // =================================================================
     // ================== LESSOR DASHBOARD ==============================
     // =================================================================
     Route::get('/lessor/stats', [LessorController::class, 'stats']);
     Route::get('/lessor/reviews', [LessorController::class, 'reviews']);
-    Route::post('/reviews/{id}/reply', [ReviewController::class, 'reply'])
-        ->middleware('auth:sanctum');
-
-  Route::post('/reviews/{id}/replies', [ReviewController::class, 'replyReview'])
-    ->middleware('auth:sanctum');
-
-Route::post('/replies/{replyId}/child', [ReviewController::class, 'replyChild'])
-    ->middleware('auth:sanctum');
-
 });
+Route::middleware('auth:sanctum')->get('/lessor/posts', [PostController::class, 'index']);

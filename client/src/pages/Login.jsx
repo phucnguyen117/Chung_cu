@@ -52,7 +52,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
       try {
         data = JSON.parse(text)
       } catch {
-        data = null
+        throw new Error('API không trả JSON (có thể lỗi server)')
       }
 
       if (!res.ok || data?.status === false) {
@@ -66,23 +66,36 @@ export default function Login({ onClose, onSwitchToRegister }) {
         )
       }
 
-      const token =
-        data?.access_token ||
-        data?.token ||
-        data?.data?.access_token ||
-        data?.data?.token
+      // 🔥 CHỈ LẤY access_token – KHÔNG LINH TINH
+      const token = data?.access_token
+      const user = data?.user || null
 
-      const user =
-        data?.user ||
-        data?.data?.user ||
-        data?.data ||
-        null
+      if (!token) {
+        throw new Error('Không nhận được access_token từ server.')
+      }
 
-      if (token) localStorage.setItem('access_token', token)
-      if (user) localStorage.setItem('auth_user', JSON.stringify(user))
+      // ✅ LƯU TOKEN
+      localStorage.setItem('access_token', token)
+      if (user) {
+        localStorage.setItem('auth_user', JSON.stringify(user))
+      }
 
+      // 🔐 VERIFY TOKEN NGAY (BẮT LỖI SỚM)
+      const check = await fetch('/api/user/profile', {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!check.ok) {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('auth_user')
+        throw new Error('Token không hợp lệ hoặc đã hết hạn.')
+      }
+
+      // 🔔 THÔNG BÁO TOÀN APP
       window.dispatchEvent(new Event('auth:changed'))
-      localStorage.removeItem('user')
 
       onClose && onClose()
     } catch (err) {
@@ -160,7 +173,6 @@ export default function Login({ onClose, onSwitchToRegister }) {
 
           <p className="login-bottom">
             Chưa có tài khoản?{' '}
-            {/* ⚠️ KHÔNG ĐI TỚI /register NỮA */}
             <button
               type="button"
               className="login-link login-link--button"
