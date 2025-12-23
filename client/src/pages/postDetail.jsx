@@ -308,8 +308,9 @@ export default function PostDetail() {
     )
     if (anyUrl) return anyUrl
 
-    // 7. Cuối cùng mới dùng placeholder
-    return 'https://via.placeholder.com/1200x600?text=Apartment'
+    // 7. Cuối cùng mới dùng placeholder (SVG data URI để tránh phụ thuộc mạng)
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600"><rect width="100%" height="100%" fill="#e2e8f0"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-size="36">Apartment</text></svg>`
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
   }, [post, postImages])
 
   // LIST ẢNH ĐỂ DÙNG CHO GALLERY (ưu tiên post.images, nếu trống thì dùng postImages)
@@ -369,6 +370,7 @@ export default function PostDetail() {
 
   // Môi trường xung quanh
   const envFeatures =
+    post?.environmentFeatures ||
     post?.environment_features ||
     post?.env_features || // fallback nếu BE đặt tên khác
     []
@@ -928,37 +930,6 @@ export default function PostDetail() {
               <h2 className="pd-card__title">Mô tả chi tiết</h2>
               <div className="pd-content">{post.content}</div>
 
-              {/* TIỆN ÍCH TRONG MÔ TẢ */}
-              {amenities.length > 0 && (
-                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid rgba(148, 163, 184, 0.2)' }}>
-                  <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px', margin: '0 0 8px 0' }}>
-                    Tiện ích trong phòng
-                  </h3>
-                  <div className="pd-tags">
-                    {amenities.map(a => (
-                      <span key={a.id || a.name} className="pd-tag">
-                        {a.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* MÔI TRƯỜNG XUNG QUANH TRONG MÔ TẢ */}
-              {envFeatures.length > 0 && (
-                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(148, 163, 184, 0.2)' }}>
-                  <h3 style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px', margin: '0 0 8px 0' }}>
-                    Môi trường xung quanh
-                  </h3>
-                  <div className="pd-tags">
-                    {envFeatures.map(e => (
-                      <span key={e.id || e.name} className="pd-tag">
-                        {e.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </article>
           )}
 

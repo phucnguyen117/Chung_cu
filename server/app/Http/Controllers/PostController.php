@@ -133,6 +133,13 @@ class PostController extends Controller
             $post->reviews_count = $post->reviews()->count();
         }
 
+        // ===== Compatibility: make snake_case environment_features available for frontend =====
+        if ($post->relationLoaded('environmentFeatures') && $post->environmentFeatures) {
+            $post->environment_features = $post->environmentFeatures->toArray();
+        } else {
+            $post->environment_features = $post->environmentFeatures ? $post->environmentFeatures->toArray() : [];
+        }
+
         return $post;
     }
 
@@ -293,6 +300,15 @@ class PostController extends Controller
                 'district_id' => 'nullable|exists:districts,id',
                 'ward_id' => 'nullable|exists:wards,id',
                 'status' => 'nullable|in:draft,pending,published,rejected',
+                // Relation fields - accept both conventions (amenity_ids OR amenities etc.)
+                'amenity_ids' => 'nullable|array',
+                'amenity_ids.*' => 'exists:amenities,id',
+                'amenities' => 'nullable|array',
+                'amenities.*' => 'exists:amenities,id',
+                'environment_ids' => 'nullable|array',
+                'environment_ids.*' => 'exists:environment_features,id',
+                'environment_features' => 'nullable|array',
+                'environment_features.*' => 'exists:environment_features,id',
             ]);
 
             $post = Post::create([
@@ -312,15 +328,53 @@ class PostController extends Controller
                 'published_at' => now(),
             ]);
 
-            if ($user->role === 'lessor') {
+            if ($user->role === 'lessor' && $post->status === 'published') {
+                // Thông báo chỉ khi bài ở trạng thái 'published'
+                $post->load('category');
+                $category = $post->category ? $post->category->name : 'bài viết';
+                $message = "{$user->name} vừa đăng {$category}: {$post->title}";
                 foreach (User::admins()->get() as $admin) {
                     Notification::create([
                         'user_id' => $admin->id,
                         'type' => 'post_created',
-                        'content' => "{$user->name} vừa đăng bài: {$post->title}",
+                        'content' => $message,
+                        'is_read' => false,
+                        'data' => ['post_id' => $post->id, 'category' => $category],
                     ]);
                 }
             }
+
+            // Gắn relations nếu được truyền từ client (hỗ trợ cả 'amenity_ids' hoặc 'amenities',
+            // và 'environment_ids' hoặc 'environment_features')
+            $amenityInput = null;
+            if ($request->filled('amenity_ids')) $amenityInput = $request->input('amenity_ids');
+            elseif ($request->filled('amenities')) $amenityInput = $request->input('amenities');
+
+            if (is_array($amenityInput)) {
+                // đảm bảo là số nguyên
+                $post->amenities()->sync(array_map('intval', $amenityInput));
+            }
+
+            $envInput = null;
+            if ($request->filled('environment_ids')) $envInput = $request->input('environment_ids');
+            elseif ($request->filled('environment_features')) $envInput = $request->input('environment_features');
+
+            if (is_array($envInput)) {
+                $post->environmentFeatures()->sync(array_map('intval', $envInput));
+            }
+
+            // Tải lại quan hệ để trả về dữ liệu đầy đủ
+            $post->load([
+                'user:id,name,email',
+                'category:id,name',
+                'province:id,name',
+                'district:id,name',
+                'ward:id,name',
+                'thumbnail',
+                'images.file',
+                'amenities:id,name',
+                'environmentFeatures:id,name',
+            ]);
 
             // Chuẩn hoá response cho bài vừa tạo
             $post = $this->preparePostForResponse($post);
@@ -425,6 +479,16 @@ class PostController extends Controller
                 'district_id'         => 'nullable|exists:districts,id',
                 'ward_id'             => 'nullable|exists:wards,id',
 
+                // Relations (chấp nhận cả tên amenities hoặc amenity_ids; environment_features hoặc environment_ids)
+                'amenity_ids'         => 'nullable|array',
+                'amenity_ids.*'       => 'exists:amenities,id',
+                'amenities'           => 'nullable|array',
+                'amenities.*'         => 'exists:amenities,id',
+                'environment_ids'     => 'nullable|array',
+                'environment_ids.*'   => 'exists:environment_features,id',
+                'environment_features' => 'nullable|array',
+                'environment_features.*' => 'exists:environment_features,id',
+
                 // gallery
                 'remove_image_ids'    => 'array',
                 'remove_image_ids.*'  => 'integer',
@@ -484,6 +548,23 @@ class PostController extends Controller
                 }
             }
 
+            // Sync relations if provided (accept both conventions)
+            $amenityInput = null;
+            if ($request->has('amenity_ids')) $amenityInput = $request->input('amenity_ids');
+            elseif ($request->has('amenities')) $amenityInput = $request->input('amenities');
+
+            if (is_array($amenityInput)) {
+                $post->amenities()->sync(array_map('intval', $amenityInput));
+            }
+
+            $envInput = null;
+            if ($request->has('environment_ids')) $envInput = $request->input('environment_ids');
+            elseif ($request->has('environment_features')) $envInput = $request->input('environment_features');
+
+            if (is_array($envInput)) {
+                $post->environmentFeatures()->sync(array_map('intval', $envInput));
+            }
+
             // reload
             $post->load([
                 'category:id,name',
@@ -492,6 +573,8 @@ class PostController extends Controller
                 'ward:id,name',
                 'thumbnail',
                 'images.file',
+                'amenities:id,name',
+                'environmentFeatures:id,name',
             ]);
 
             return response()->json([
@@ -611,9 +694,24 @@ class PostController extends Controller
             ], 404);
         }
 
+        $oldStatus = $post->status;
+
         $post->update([
             'status' => $request->status
         ]);
+
+        // Nếu admin chuyển bài sang 'published' từ trạng thái khác -> thông báo cho chủ bài
+        if ($request->status === 'published' && $oldStatus !== 'published') {
+            $post->load('category');
+            $category = $post->category ? $post->category->name : 'bài viết';
+            Notification::create([
+                'user_id' => $post->user_id,
+                'type' => 'post_published',
+                'content' => "Bài {$category} của bạn đã được đăng: {$post->title}",
+                'is_read' => false,
+                'data' => ['post_id' => $post->id, 'category' => $category],
+            ]);
+        }
 
         return response()->json([
             'status' => true,

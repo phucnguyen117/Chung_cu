@@ -237,6 +237,7 @@ Route::put('/posts/{id}/status', [PostController::class, 'updateStatus']);
     Route::post('/notifications/read/{id}', [NotificationsController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationsController::class, 'markAll']);
     Route::get('/notifications/unread-count', [NotificationsController::class, 'unreadCount']);
+    Route::delete('/notifications/{id}', [NotificationsController::class, 'destroy']);
 
 
     // =================================================================

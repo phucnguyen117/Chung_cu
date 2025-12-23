@@ -18,6 +18,12 @@ export default function AdminPostEdit() {
   })
 
   const [categories, setCategories] = useState([])
+  const [amenities, setAmenities] = useState([])
+  const [envFeatures, setEnvFeatures] = useState([])
+
+  const [selectedAmenities, setSelectedAmenities] = useState([])
+  const [selectedEnvFeatures, setSelectedEnvFeatures] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -32,7 +38,7 @@ export default function AdminPostEdit() {
 
         const token = localStorage.getItem('access_token')
 
-        const [postRes, catRes] = await Promise.all([
+        const [postRes, catRes, amenRes, envRes] = await Promise.all([
           fetch(`${API_URL}/posts/${id}`, {
             headers: {
               Accept: 'application/json',
@@ -42,6 +48,8 @@ export default function AdminPostEdit() {
           fetch(`${API_URL}/categories`, {
             headers: { Accept: 'application/json' },
           }),
+          fetch(`${API_URL}/amenities`, { headers: { Accept: 'application/json' } }),
+          fetch(`${API_URL}/environment-features`, { headers: { Accept: 'application/json' } }),
         ])
 
         // ----- parse post -----
@@ -69,21 +77,49 @@ export default function AdminPostEdit() {
           content: p.content || '',
         })
 
-        // ----- parse categories -----
-        const catText = await catRes.text()
-        let catJson
-        try {
-          catJson = JSON.parse(catText)
-        } catch {
-          console.error('CATEGORIES RESP:', catText)
-          throw new Error('Máy chủ trả về dữ liệu danh mục không hợp lệ.')
-        }
+      // set selected amenities / environment features based on the post data
+      setSelectedAmenities((p.amenities && Array.isArray(p.amenities)) ? p.amenities.map(a => a.id) : [])
+      // support both camelCase and snake_case responses
+      const postEnv = p.environmentFeatures || p.environment_features || []
+      setSelectedEnvFeatures(Array.isArray(postEnv) ? postEnv.map(e => e.id) : [])
 
-        if (!catRes.ok || catJson.status === false) {
-          throw new Error(catJson.message || 'Không tải được danh mục.')
-        }
+      // ----- parse categories -----
+      const catText = await catRes.text()
+      let catJson
+      try {
+        catJson = JSON.parse(catText)
+      } catch {
+        console.error('CATEGORIES RESP:', catText)
+        throw new Error('Máy chủ trả về dữ liệu danh mục không hợp lệ.')
+      }
 
-        setCategories(catJson.data || catJson || [])
+      if (!catRes.ok || catJson.status === false) {
+        throw new Error(catJson.message || 'Không tải được danh mục.')
+      }
+
+      setCategories(catJson.data || catJson || [])
+
+      // ----- parse amenities -----
+      const amenText = await amenRes.text()
+      let amenJson
+      try {
+        amenJson = JSON.parse(amenText)
+      } catch {
+        console.error('AMENITIES RESP:', amenText)
+        amenJson = { status: false, data: [] }
+      }
+      if (amenRes.ok && amenJson.status !== false) setAmenities(amenJson.data || amenJson || [])
+
+      // ----- parse environment features -----
+      const envText = await envRes.text()
+      let envJson
+      try {
+        envJson = JSON.parse(envText)
+      } catch {
+        console.error('ENV RESP:', envText)
+        envJson = { status: false, data: [] }
+      }
+      if (envRes.ok && envJson.status !== false) setEnvFeatures(envJson.data || envJson || [])
       } catch (err) {
         console.error(err)
         setError(err.message || 'Có lỗi khi tải dữ liệu.')
@@ -99,6 +135,18 @@ export default function AdminPostEdit() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const toggleAmenity = (id) => {
+    setSelectedAmenities((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleEnvFeature = (id) => {
+    setSelectedEnvFeatures((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
   }
 
   const handleSubmit = async (e) => {
@@ -136,6 +184,9 @@ export default function AdminPostEdit() {
           address: form.address,
           status: form.status,
           content: form.content,
+          // include selected relations
+          amenity_ids: selectedAmenities,
+          environment_ids: selectedEnvFeatures,
         }),
       })
 
@@ -296,6 +347,43 @@ export default function AdminPostEdit() {
                     placeholder="Mô tả chi tiết căn hộ..."
                   ></textarea>
                 </label>
+              </div>
+            </div>
+
+            {/* Tiện ích + Môi trường xung quanh */}
+            <div className="admin-form__row">
+              <div className="admin-form__col">
+                <div className="admin-label">Tiện ích</div>
+                <div className="admin-checkbox-list">
+                  {amenities.length === 0 && <p>Không có tiện ích.</p>}
+                  {amenities.map((a) => (
+                    <label key={a.id} className="admin-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedAmenities.includes(a.id)}
+                        onChange={() => toggleAmenity(a.id)}
+                      />
+                      {a.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-form__col">
+                <div className="admin-label">Môi trường xung quanh</div>
+                <div className="admin-checkbox-list">
+                  {envFeatures.length === 0 && <p>Không có môi trường.</p>}
+                  {envFeatures.map((e) => (
+                    <label key={e.id} className="admin-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedEnvFeatures.includes(e.id)}
+                        onChange={() => toggleEnvFeature(e.id)}
+                      />
+                      {e.name}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Notification;
 use App\Models\LessorRequest;
 use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Hash; 
 
 class UserController extends Controller
 {
@@ -307,6 +308,18 @@ public function requestLessor(Request $request)
     'cccd_back_url'  => $backUrl,
     ]);
 
+    // Gửi thông báo đến tất cả admin về yêu cầu mới (ngắn gọn: đăng ký làm chủ trọ)
+    $message = "{$user->name} đã gửi đăng ký làm chủ trọ.";
+    foreach (User::admins()->get() as $admin) {
+        Notification::create([
+            'user_id' => $admin->id,
+            'type' => 'lessor_request',
+            'content' => $message,
+            'is_read' => false,
+            'data' => ['user_id' => $user->id, 'lessor_request_id' => $lessorRequest->id],
+        ]);
+    }
+
     return response()->json([
         'status' => true,
         'message' => 'Yêu cầu nâng cấp đã được gửi.',
@@ -425,6 +438,15 @@ public function requestLessor(Request $request)
         $user->role = 'lessor';
         $user->save();
 
+        // Thông báo cho user rằng yêu cầu đã được chấp nhận
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => 'lessor_approved',
+            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã được chấp nhận.',
+            'is_read' => false,
+            'data' => ['lessor_request_id' => $lessorRequest->id],
+        ]);
+
         return response()->json([
             'status' => true,
             'message' => 'Yêu cầu đã được chấp nhận. User trở thành lessor.',
@@ -464,6 +486,15 @@ public function requestLessor(Request $request)
         $lessorRequest->status = 'rejected';
         $lessorRequest->rejection_reason = $request->reason;
         $lessorRequest->save();
+
+        // Thông báo cho user rằng yêu cầu đã bị từ chối cùng lý do
+        Notification::create([
+            'user_id' => $lessorRequest->user_id,
+            'type' => 'lessor_rejected',
+            'content' => 'Yêu cầu đăng ký làm chủ trọ của bạn đã bị từ chối. Lý do: ' . $lessorRequest->rejection_reason,
+            'is_read' => false,
+            'data' => ['lessor_request_id' => $lessorRequest->id],
+        ]);
 
         return response()->json([
             'status' => true,

@@ -5,6 +5,7 @@ import logo from '@/assets/images/logo.png'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import UserSettingsModal from '../components/UserSettingsModal'
+import NotificationsBell from './NotificationsBell'
 import { Heart } from 'lucide-react';
 
 const API_BASE_URL =
@@ -327,16 +328,18 @@ export default function Header() {
             {user && (
               <div className="header-auth-user" ref={userMenuRef}>
 
-                {/* Avatar */}
+                {/* Notifications bell */}
+              <div style={{display: 'inline-block', marginRight: 8}}>
+                <NotificationsBell />
+              </div>
+
+              {/* Avatar */}
                 <button type="button" className="header-avatar-btn" onClick={handleOpenMenu}>
                   <div className="header-avatar">
                     {avatarUrl ? <img src={avatarUrl} alt={user.name} /> : avatarChar}
                   </div>
 
-                  {/* Badge ở avatar */}
-                  {user.role === 'admin' && unreadAdmin > 0 && notiStage === "avatar" && (
-                    <span className="header-avatar__notification" />
-                  )}
+
                 </button>
 
                 {/* DROPDOWN */}

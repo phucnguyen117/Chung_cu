@@ -28,7 +28,7 @@
 .login-overlay__inner {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
   z-index: 1;
 }
 
@@ -39,7 +39,7 @@
 .login-card {
   position: relative;
   border-radius: 22px;
-  padding: 20px 20px 22px;
+  padding: 28px 28px 30px;
   background:
     radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.25), transparent 60%),
     rgba(15, 23, 42, 0.96);
@@ -76,17 +76,17 @@
 }
 
 .login-card h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
   color: #f9fafb;
 }
 
 .login-sub {
-  margin: 0 0 14px;
-  font-size: 13px;
+  margin: 0 0 16px;
+  font-size: 15px;
   color: #9ca3af;
-}
+} 
 
 /* nút X đóng */
 .login-close {
@@ -131,22 +131,22 @@
 /* ô input */
 .login-field input {
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.7);
-  padding: 12px 11px 10px;
-  background: rgba(15, 23, 42, 0.9);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.75);
+  padding: 14px 12px;
+  background: rgba(15, 23, 42, 0.95);
   color: #e5e7eb;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* label nằm chồng lên input */
 .login-field span {
   position: absolute;
-  left: 14px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  padding: 0 4px;
-  font-size: 13px;
+  padding: 0 6px;
+  font-size: 14px;
   color: #cbd5f5;
   background: rgba(15, 23, 42, 0.96);
   /* trùng màu card để tạo viền đẹp */
@@ -156,7 +156,7 @@
     transform 0.18s ease,
     font-size 0.18s ease,
     color 0.18s ease;
-}
+} 
 
 /* khi focus hoặc có value (không còn placeholder) → label nhảy lên trên */
 .login-field input:focus+span,
@@ -233,19 +233,19 @@
 
 /* nút submit */
 .login-submit {
-  margin-top: 6px;
+  margin-top: 8px;
   width: 100%;
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 12px 18px;
   border: 0;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 16px;
   background: linear-gradient(135deg, #38bdf8, #22c55e);
   color: #0f172a;
-  box-shadow: 0 16px 40px rgba(8, 47, 73, 0.9);
+  box-shadow: 0 18px 46px rgba(8, 47, 73, 0.95);
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-}
+} 
 
 .login-submit:hover:not(:disabled) {
   filter: brightness(1.05);
@@ -272,8 +272,13 @@
   }
 
   .login-card {
-    padding: 16px 14px 18px;
+    padding: 18px 14px 20px;
   }
+
+  .login-card h2 { font-size: 20px; }
+  .login-sub { font-size: 13px; }
+  .login-field input { font-size: 15px; padding: 12px 10px; }
+  .login-submit { font-size: 15px; padding: 10px 14px; }
 }
 
 

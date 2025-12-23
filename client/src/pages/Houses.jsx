@@ -712,37 +712,7 @@ export default function HousesExplore() {
               </div>
             </div>
 
-            <div className="re-field">
-              <label>Đối tượng</label>
-              <div className="re-checklist">
-                {member.map(a => (
-                  <label key={a.k} className="re-check">
-                    <input
-                      type="checkbox"
-                      checked={amen.includes(a.k)}
-                      onChange={() => toggleAmen(a.k)}
-                    />
-                    <span>{a.t}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
-            <div className="re-field">
-              <label>Chính sách</label>
-              <div className="re-checklist">
-                {policy.map(a => (
-                  <label key={a.k} className="re-check">
-                    <input
-                      type="checkbox"
-                      checked={amen.includes(a.k)}
-                      onChange={() => toggleAmen(a.k)}
-                    />
-                    <span>{a.t}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
             <div className="re-field">
               <label>Sắp xếp</label>
@@ -836,37 +806,7 @@ export default function HousesExplore() {
                     </div>
                   </div>
 
-                  <div className="re-field">
-                    <label>Đối tượng</label>
-                    <div className="re-checklist">
-                      {member.map(a => (
-                        <label key={a.k} className="re-check">
-                          <input
-                            type="checkbox"
-                            checked={amen.includes(a.k)}
-                            onChange={() => toggleAmen(a.k)}
-                          />
-                          <span>{a.t}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="re-field">
-                    <label>Chính sách</label>
-                    <div className="re-checklist">
-                      {policy.map(a => (
-                        <label key={a.k} className="re-check">
-                          <input
-                            type="checkbox"
-                            checked={amen.includes(a.k)}
-                            onChange={() => toggleAmen(a.k)}
-                          />
-                          <span>{a.t}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
 
                   <div className="re-field">
                     <label>Sắp xếp</label>

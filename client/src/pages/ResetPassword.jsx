@@ -1,10 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { API_URL } from '../config/api.js';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+
+  // close behavior: go back
+  const handleClose = () => navigate(-1)
+
+  // lock body scroll when modal is open
+  useEffect(() => {
+    const old = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = old }
+  }, [])
 
   const tokenFromUrl = searchParams.get('token') || ''
   const emailFromUrl = searchParams.get('email') || ''
@@ -97,82 +107,80 @@ export default function ResetPassword() {
   }
 
   return (
-    <>
-      {/* ================= RESET PASSWORD PAGE ================= */}
-        <div className="auth-page">
-          <div className="auth-card">
-            <h1 className="auth-title">Đặt lại mật khẩu</h1>
-            <p className="auth-subtitle">
-              Nhập email, mã OTP và mật khẩu mới của bạn.
-            </p>
+    <div className="forgot-overlay">
+      <div className="forgot-overlay__inner">
+        <section className="auth-card forgot-card">
+          <button type="button" className="forgot-close" onClick={handleClose}>×</button>
 
-            <form onSubmit={handleSubmit}>
-              <label className="auth-field">
-                <span>Email</span>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                />
-              </label>
+          <h1 className="auth-title">Đặt lại mật khẩu</h1>
+          <p className="auth-subtitle">Nhập email, mã OTP và mật khẩu mới của bạn.</p>
 
-              <label className="auth-field">
-                <span>Mã OTP (6 số)</span>
-                <input
-                  type="text"
-                  name="token"
-                  value={form.token}
-                  maxLength={6}
-                  onChange={(e) =>
-                    handleChange({
-                      target: {
-                        name: 'token',
-                        value: e.target.value.replace(/\D/g, ''),
-                      },
-                    })
-                  }
-                />
-              </label>
+          <form onSubmit={handleSubmit}>
+            <label className="auth-field">
+              <span>Email</span>
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+              />
+            </label>
 
-              <label className="auth-field">
-                <span>Mật khẩu mới</span>
-                <input
-                  type="password"
-                  name="new_password"
-                  value={form.new_password}
-                  onChange={handleChange}
-                />
-              </label>
+            <label className="auth-field">
+              <span>Mã OTP (6 số)</span>
+              <input
+                type="text"
+                name="token"
+                value={form.token}
+                maxLength={6}
+                onChange={(e) =>
+                  handleChange({
+                    target: {
+                      name: 'token',
+                      value: e.target.value.replace(/\D/g, ''),
+                    },
+                  })
+                }
+              />
+            </label>
 
-              <label className="auth-field">
-                <span>Nhập lại mật khẩu mới</span>
-                <input
-                  type="password"
-                  name="new_password_confirmation"
-                  value={form.new_password_confirmation}
-                  onChange={handleChange}
-                />
-              </label>
+            <label className="auth-field">
+              <span>Mật khẩu mới</span>
+              <input
+                type="password"
+                name="new_password"
+                value={form.new_password}
+                onChange={handleChange}
+              />
+            </label>
 
-              {error && <p className="auth-error">{error}</p>}
-              {success && <p className="auth-success">{success}</p>}
+            <label className="auth-field">
+              <span>Nhập lại mật khẩu mới</span>
+              <input
+                type="password"
+                name="new_password_confirmation"
+                value={form.new_password_confirmation}
+                onChange={handleChange}
+              />
+            </label>
 
-              <button
-                type="submit"
-                className="auth-btn auth-btn--primary"
-                disabled={loading}
-              >
-                {loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
-              </button>
-            </form>
+            {error && <p className="auth-error">{error}</p>}
+            {success && <p className="auth-success">{success}</p>}
 
-            <div className="auth-footer">
-              <Link to="/">Quay lại trang chủ</Link>
-            </div>
+            <button
+              type="submit"
+              className="auth-btn auth-btn--primary"
+              disabled={loading}
+            >
+              {loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
+            </button>
+          </form>
+
+          <div className="auth-footer">
+            <Link to="/">Quay lại trang chủ</Link>
           </div>
-        </div>
-
-    </>
+        </section>
+      </div>
+    </div>
   )
 }

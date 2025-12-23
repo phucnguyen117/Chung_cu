@@ -74,12 +74,28 @@ const maxBirthDate = `${year}-${month}-${day}`
     const token = localStorage.getItem("access_token")
     if (!token) return setError("Bạn chưa đăng nhập.")
 
+    // Basic client-side validation (mirror backend rules)
     if (!lessorForm.full_name || !lessorForm.email || !lessorForm.phone_number || !lessorForm.date_of_birth) {
       return setError("Vui lòng nhập đầy đủ thông tin.")
     }
 
+    // phone format: 0XXXXXXXXX
+    if (!/^0[0-9]{9}$/.test(lessorForm.phone_number)) {
+      return setError('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số bắt đầu bằng 0.')
+    }
+
     if (!cccdFront || !cccdBack) {
       return setError("Vui lòng tải lên đầy đủ ảnh CCCD mặt trước và mặt sau.")
+    }
+
+    // file size/type checks (limit 4MB)
+    const maxBytes = 4 * 1024 * 1024
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allowedTypes.includes(cccdFront.type) || !allowedTypes.includes(cccdBack.type)) {
+      return setError('Ảnh CCCD phải là JPG/PNG.')
+    }
+    if (cccdFront.size > maxBytes || cccdBack.size > maxBytes) {
+      return setError('Ảnh CCCD không được lớn hơn 4MB.')
     }
 
     try {
@@ -99,18 +115,41 @@ const maxBirthDate = `${year}-${month}-${day}`
         body: fd
       })
 
-      const data = await res.json()
+      // read raw text and try parse JSON for better debugging
+      let data = null
+      let rawText = null
+      try {
+        rawText = await res.text()
+        data = rawText ? JSON.parse(rawText) : null
+      } catch (e) {
+        data = null
+      }
 
-      if (!res.ok || data.status === false) {
-        throw new Error(data.message || "Không thể gửi yêu cầu.")
+      if (!res.ok || data?.status === false) {
+        // handle auth issues
+        if (res.status === 401 || res.status === 419) {
+          throw new Error('Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.')
+        }
+
+        // show validation errors if present
+        if (data && data.errors) {
+          const first = Object.values(data.errors).flat()[0]
+          throw new Error(first || data.message || 'Không thể gửi yêu cầu.')
+        }
+
+        // fallback: include raw response text or status for debugging
+        const fallback = data?.message || rawText || `Lỗi server (status ${res.status})`
+        console.error('Lessor request failed', { status: res.status, rawText, data })
+        throw new Error(fallback)
       }
 
       setSuccess("Gửi yêu cầu thành công! Vui lòng chờ admin duyệt.")
-   onClose();
-window.location.reload();
+      // close modal and refresh so status updates
+      onClose();
+      window.location.reload();
 
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Có lỗi khi gửi yêu cầu.')
     } finally {
       setLoading(false)
     }

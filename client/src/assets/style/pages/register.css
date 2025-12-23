@@ -27,7 +27,7 @@
 .register-overlay__inner {
   position: relative;
   width: 100%;
-  max-width: 440px;
+  max-width: 560px;
   z-index: 1;
 }
 
@@ -38,7 +38,7 @@
 .register-card {
   position: relative;
   border-radius: 24px;
-  padding: 22px 22px 24px;
+  padding: 28px 28px 30px;
   background:
     radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.25), transparent 60%),
     rgba(15, 23, 42, 0.96);
@@ -52,8 +52,7 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  padding: 2px;
-  background: conic-gradient(from 0deg,
+  padding: 2px;   background: conic-gradient(from 0deg,
       #ff004c,
       #ffdd00,
       #00ff73,
@@ -73,17 +72,17 @@
 }
 
 .register-title {
-  margin: 0 0 4px;
-  font-size: 22px;
-  font-weight: 700;
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
   color: #f9fafb;
 }
 
 .register-sub {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: 15px;
   color: #9ca3af;
-}
+} 
 
 /* nút X đóng */
 .register-close {
@@ -126,14 +125,32 @@
 /* ô input */
 .reg-field input {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.7);
-  padding: 12px 11px 10px;
-  background: rgba(15, 23, 42, 0.9);
+  padding: 14px 12px;
+  background: rgba(15, 23, 42, 0.95);
   color: #e5e7eb;
-  font-size: 14px;
+  font-size: 16px;
 }
 
+/* =========================
+   BUTTON + LINK
+   ========================= */
+
+.reg-submit {
+  margin-top: 12px;
+  width: 100%;
+  border-radius: 999px;
+  padding: 12px 18px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  background: linear-gradient(135deg, #38bdf8, #22c55e);
+  color: #0f172a;
+  box-shadow: 0 16px 40px rgba(8, 47, 73, 0.9);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+} 
 /* label chồng lên input */
 .reg-field span {
   position: absolute;

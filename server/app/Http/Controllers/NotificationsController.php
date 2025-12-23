@@ -55,4 +55,24 @@ class NotificationsController extends Controller
             'message' => 'Đã đọc toàn bộ thông báo'
         ]);
     }
+
+    // DELETE /api/notifications/{id}
+    public function destroy($id)
+    {
+        $deleted = Notification::where('user_id', auth()->id())
+            ->where('id', $id)
+            ->delete();
+
+        if ($deleted) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Đã xoá thông báo'
+            ]);
+        }
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Không tìm thấy thông báo hoặc không có quyền'
+        ], 404);
+    }
 }

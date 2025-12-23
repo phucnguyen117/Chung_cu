@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Review;
 use App\Models\Post;
 use App\Models\Notification;
@@ -506,21 +507,33 @@ public function replyChild(Request $request, $replyId)
      */
         public function getTree($postId)
         {
-            $reviews = Review::with([
-                'user:id,name,avatar_url',
-                'replies.user:id,name,avatar_url',
-                'replies.children.user:id,name,avatar_url',
-            ])
-            ->where('post_id', $postId)
-             ->whereNull('parent_id')
-            ->where('is_hidden', false)
-            ->orderBy('created_at', 'desc')
-            ->get();
+            try {
+                $reviews = Review::with([
+                    'user:id,name,avatar_url',
+                    'replies.user:id,name,avatar_url',
+                    'replies.children.user:id,name,avatar_url',
+                ])
+                ->where('post_id', $postId)
+                ->whereNull('parent_id')
+                ->where('is_hidden', false)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-            return response()->json([
-                'status' => true,
-                'data'   => $reviews
-            ]);
+                    return response()->json([
+                    'status' => true,
+                    'data'   => $reviews
+                ]);
+            } catch (\Exception $e) {
+                Log::error('getTree error: ' . $e->getMessage());
+
+                // Trả về 200 với data rỗng để frontend không nhận HTTP 500 (giữ UX ổn định),
+                // nhưng vẫn báo lỗi trong body để dễ debug.
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Không thể tải cây bình luận hiện tại.',
+                    'data' => [],
+                ], 200);
+            }
         }
 
 
