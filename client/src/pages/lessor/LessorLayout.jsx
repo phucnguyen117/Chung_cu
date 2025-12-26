@@ -77,9 +77,9 @@ export default function LessorLayout() {
           <NavLink to="/lessor/reviews" className={navClass}>
             Đánh giá
           </NavLink>
-          <NavLink to="/lessor/appointments" className={navClass}>
+          {/* <NavLink to="/lessor/appointments" className={navClass}>
             Lịch hẹn
-          </NavLink>
+          </NavLink> */}
         </div>
 
         {/* ===== FOOTER SIDEBAR ===== */}

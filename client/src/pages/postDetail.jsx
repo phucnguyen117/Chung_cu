@@ -26,7 +26,7 @@ function normalizeImageUrl(source) {
   if (source.image_url) return source.image_url
   if (source.path) return source.path
 
-  return ''
+  return '../src/assets/images/default-avatar.png'
 }
 
 const API_BASE_URL =

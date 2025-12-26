@@ -22,12 +22,14 @@ use App\Http\Controllers\BlogTagController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\LessorController;
+use App\Http\Controllers\HomeStatsController;
 use Illuminate\Support\Facades\Route;
 
 Route::options('/{any}', function () {
     return response()->json([], 200);
 })->where('any', '.*');
 
+Route::get('/home-stats', [HomeStatsController::class, 'index']);
 
 // ================== CHATBOT ==================
 Route::post('/chatbot', [ChatbotController::class, 'sendMessage']);

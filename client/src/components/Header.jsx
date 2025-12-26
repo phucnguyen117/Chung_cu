@@ -305,17 +305,6 @@ export default function Header() {
           {/* ACTIONS */}
           <div className="site-header__actions">
 
-            {/* Wishlist */}
-            <button
-              className="header-heart"
-              onClick={() => !user ? setShowLogin(true) : navigate('/wishlist')}
-            >
-              <span className="header-heart__icon"><Heart /></span>
-              {wishlistCount > 0 && (
-                <span className="header-heart__badge">{wishlistCount}</span>
-              )}
-            </button>
-
             {/* Chưa đăng nhập */}
             {!user && (
               <>
@@ -327,6 +316,17 @@ export default function Header() {
             {/* ĐÃ LOGIN */}
             {user && (
               <div className="header-auth-user" ref={userMenuRef}>
+
+              {/* Wishlist */}
+              <button
+                className="header-heart"
+                onClick={() => navigate('/wishlist')}
+              >
+                <span className="header-heart__icon"><Heart /></span>
+                {wishlistCount > 0 && (
+                  <span className="header-heart__badge">{wishlistCount}</span>
+                )}
+              </button>
 
                 {/* Notifications bell */}
               <div style={{display: 'inline-block', marginRight: 8}}>

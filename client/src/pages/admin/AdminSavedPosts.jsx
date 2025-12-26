@@ -1,6 +1,7 @@
 // src/pages/admin/AdminSavedPosts.jsx
 import { useEffect, useState } from 'react'
 import '@/assets/style/pages/admin.css'
+import { Search } from 'lucide-react';
 
 const API_BASE_URL =
   (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
@@ -121,7 +122,7 @@ export default function AdminSavedPosts() {
         {/* Thanh search */}
         <div className="admin-toolbar">
           <div className="admin-input-wrap admin-input-wrap--search">
-            <span className="admin-input__icon">🔍</span>
+            <span className="admin-input__icon"><Search size={16} strokeWidth={3} /></span>
             <input
               className="admin-input admin-input--search"
               placeholder="Tìm theo email, tên người dùng hoặc tiêu đề bài đăng..."

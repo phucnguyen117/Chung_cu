@@ -34,19 +34,27 @@ export default function Footer(){
           <div className="footer-col footer-col--social">
             <h4>Kết nối với chúng tôi</h4>
             <div className="footer-social">
-            <button aria-label="Facebook" className="footer-social__icon">
+            <button aria-label="Facebook" className="footer-social__icon"
+              onClick={() => window.open('https://facebook.com', '_blank')}
+            >
               <Facebook size={20} />
             </button>
 
-            <button aria-label="Instagram" className="footer-social__icon">
+            <button aria-label="Instagram" className="footer-social__icon"
+              onClick={() => window.open('https://instagram.com', '_blank')}
+            >
               <Instagram size={20} />
             </button>
 
-            <button aria-label="YouTube" className="footer-social__icon">
+            <button aria-label="YouTube" className="footer-social__icon"
+              onClick={() => window.open('https://youtube.com', '_blank')}
+            >
               <Youtube size={20} />
             </button>
 
-            <button aria-label="Twitter" className="footer-social__icon">
+            <button aria-label="Twitter" className="footer-social__icon"
+              onClick={() => window.open('https://twitter.com', '_blank')}
+            >
               <Twitter size={20} />
             </button>
             </div>

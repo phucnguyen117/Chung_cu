@@ -134,21 +134,57 @@ export default function AdminBlogEdit() {
     }, 10)
   }
 
-  const handleEditorImageFile = async (file) => {
-    try {
-      setUploadingInlineImage(true)
-      await new Promise((resolve, reject) => {
-        const fr = new FileReader()
-        fr.onload = () => { const url = fr.result; insertAtCursor(`<img src="${url}" alt="" />`); resolve() }
-        fr.onerror = reject
-        fr.readAsDataURL(file)
-      })
-    } catch (err) {
-      console.error('Lỗi insert inline image', err)
-      alert('Không thể chèn ảnh vào nội dung')
-    } finally { setUploadingInlineImage(false) }
-  }
+  // Kho chứa ảnh tạm: Key là link ngắn, Value là dữ liệu thật
+  const tempImageMap = useRef({}) 
 
+    // Hàm nén ảnh (giữ nguyên để giảm dung lượng)
+    const compressImage = (file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800; // Giới hạn chiều rộng
+            let w = img.width;
+            let h = img.height;
+            if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; }
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          }
+        }
+      })
+    }
+
+    const handleEditorImageFile = async (file) => {
+        try {
+          setUploadingInlineImage(true)
+          
+          // 1. Tạo dữ liệu ảnh thật (đã nén) để dành gửi server
+          const realBase64 = await compressImage(file)
+
+          // 2. Tạo link ảo siêu ngắn để hiển thị trong editor
+          const shortBlobUrl = URL.createObjectURL(file)
+
+          // 3. Lưu cặp đôi này vào kho chứa
+          tempImageMap.current[shortBlobUrl] = realBase64
+
+          // 4. Chèn link ảo vào ô text (Code lúc này chỉ có 1 dòng!)
+          const imgTag = `\n<img src="${shortBlobUrl}" width="100%" />\n`
+          insertAtCursor(imgTag)
+
+        } catch (err) {
+          console.error(err)
+          alert('Lỗi chèn ảnh')
+        } finally { 
+          setUploadingInlineImage(false) 
+        }
+      }
+  
   // Xóa ảnh bìa hiện có
   const handleRemoveCover = async () => {
     if (!window.confirm('Xác nhận xóa ảnh bìa hiện tại?')) return
@@ -201,10 +237,16 @@ export default function AdminBlogEdit() {
       const token = localStorage.getItem('access_token')
       if (!token) throw new Error('Bạn chưa đăng nhập')
 
+      let finalContent = content
+      Object.entries(tempImageMap.current).forEach(([blobUrl, realBase64]) => {
+        // Thay thế tất cả link ảo bằng link thật
+        finalContent = finalContent.split(blobUrl).join(realBase64)
+      })
+
       const formData = new FormData()
       formData.append('title', title)
       formData.append('subtitle', subtitle)
-      formData.append('content', content)
+      formData.append('content', finalContent)
       // send tags as tags[] entries (avoid sending a JSON string which breaks Laravel 'array' validation)
       if (tags && tags.length > 0) tags.forEach(t => formData.append('tags[]', t))
 
@@ -270,10 +312,11 @@ export default function AdminBlogEdit() {
                   className="admin-input"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
+                  placeholder="Ghi tiêu đề bài blog..."
                 />
               </label>
 
-              <label className="admin-field">
+              {/* <label className="admin-field">
                 <span>Tiêu đề phụ / mô tả ngắn</span>
                 <textarea
                   className="admin-input"
@@ -281,10 +324,10 @@ export default function AdminBlogEdit() {
                   value={subtitle}
                   onChange={e => setSubtitle(e.target.value)}
                 />
-              </label>
+              </label> */}
 
               <label className="admin-field gf-field-card">
-                <span>Tags bài viết</span>
+                {/* <span>Tags bài viết</span>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {tags.map((t, i) => (
@@ -308,7 +351,7 @@ export default function AdminBlogEdit() {
                     placeholder="Thêm tag và nhấn Enter"
                     style={{ minWidth: 160 }}
                   />
-                </div>
+                </div> */}
 
                 <span style={{ display: 'block', marginTop: 12 }}>Nội dung *</span>
 
@@ -316,6 +359,7 @@ export default function AdminBlogEdit() {
                   <button
                     type="button"
                     className="admin-btn admin-btn--outline"
+                    style={{ color: '#ffff' }}
                     onClick={() => editorImageInputRef.current?.click()}
                   >
                     Chèn ảnh vào nội dung
@@ -331,6 +375,8 @@ export default function AdminBlogEdit() {
                   onChange={e => setContent(e.target.value)}
                   onDrop={(e) => { e.preventDefault(); const files = e.dataTransfer?.files; if (files && files.length) handleEditorImageFile(files[0]) }}
                   onPaste={(e) => { const files = e.clipboardData?.files; if (files && files.length) { handleEditorImageFile(files[0]) } }}
+                  style={{ fontFamily: 'inherit', height: '100%' }}
+                  placeholder="Nhập nội dung chi tiết, có thể chèn ảnh bằng kéo/thả, dán hoặc nút Chèn ảnh..."
                 />
 
                 <input
@@ -345,18 +391,19 @@ export default function AdminBlogEdit() {
 
             <div className="admin-blog-form__right">
               <label className="admin-field">
-                <span>Ảnh bìa (thay nếu muốn)</span>
+                <span>Ảnh bìa * (thay nếu muốn)</span>
 
                 <div className="admin-upload">
                   <button
                     type="button"
                     className="admin-btn admin-btn--outline"
+                    style={{ color: '#ffff' }}
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Chọn ảnh bìa
                   </button>
                   <span className="admin-upload__hint">
-                    {coverFiles.length === 0 ? (existingCover ? 'Sử dụng ảnh hiện có' : 'Chưa chọn ảnh') : coverFiles.map(f => f.name).join(', ')}
+                    {coverFiles.length === 0 ? (existingCover ? 'Sử dụng ảnh hiện có' : 'Chưa chọn ảnh. muốn thay đổi hãy thay ảnh mới') : coverFiles.map(f => f.name).join(', ')}
                   </span>
                 </div>
 

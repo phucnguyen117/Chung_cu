@@ -126,12 +126,17 @@ export default function Register({ onClose , onSwitchToLogin }) {
         throw new Error(data.message || 'Đăng ký thất bại, vui lòng kiểm tra lại.')
       }
 
-      // === ĐĂNG KÝ THÀNH CÔNG ===
-      setSuccess('Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.')
+      // === ĐĂNG KÝ THÀNH CÔNG → AUTO LOGIN ===
+      localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
 
-      // (tuỳ bạn) Nếu muốn auto đăng nhập luôn thì có thể lưu token:
-      // localStorage.setItem('access_token', data.access_token)
-      // localStorage.setItem('auth_user', JSON.stringify(data.user))
+      setSuccess('Đăng ký thành công! Đang đăng nhập...')
+
+      // đóng popup + refresh giao diện
+      setTimeout(() => {
+        onClose()
+        window.location.reload() // để header / auth context cập nhật
+      }, 600)
 
       // Đóng popup sau 1s
       setTimeout(() => {

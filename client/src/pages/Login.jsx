@@ -184,7 +184,7 @@ export default function Login({ onClose, onSwitchToRegister }) {
             Chưa có tài khoản?{' '}
             <button
               type="button"
-              className="login-link login-link--button"
+              className="login-link login-link--button reg-link"
               onClick={() => {
                 onClose && onClose()
                 onSwitchToRegister && onSwitchToRegister()

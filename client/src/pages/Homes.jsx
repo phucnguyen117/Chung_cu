@@ -4,9 +4,55 @@ import { api } from '@/api/axios'
 import '@/assets/style/pages/Homes.css'
 
 import { 
-  Play, Phone, Home, FileText, 
-  MapPin, ArrowRight, CheckCircle, Star, TrendingUp, Users, Eye, Info 
+  HousePlus, Phone, Home, FileText, 
+  MapPin, ArrowRight, CheckCircle, Star, TrendingUp, Users, Eye, Info,
+  ClipboardList, UserRoundCheck 
 } from 'lucide-react'
+
+// Đếm số từ 0 đến giá trị mục tiêu
+export function useCountUp(value, duration = 800) {
+  const [display, setDisplay] = useState("0");
+
+  useEffect(() => {
+    let timer;
+
+    // chưa có data → hiệu ứng loading giả
+    if (!value || value === "0") {
+      let fake = 0;
+      timer = setInterval(() => {
+        fake = (fake + Math.floor(Math.random() * 5)) % 20;
+        setDisplay(fake.toString());
+      }, 120);
+
+      return () => clearInterval(timer);
+    }
+
+    // có data thật
+    const hasPlus = value.toString().includes("+");
+    const number = parseInt(value.toString().replace(/\D/g, ""), 10);
+
+    if (isNaN(number)) return;
+
+    let current = 0;
+    const step = Math.max(1, Math.floor(number / 40));
+    const interval = Math.max(20, duration / 40);
+
+    timer = setInterval(() => {
+      current += step;
+
+      if (current >= number) {
+        setDisplay(number + (hasPlus ? "+" : ""));
+        clearInterval(timer);
+      } else {
+        setDisplay(current.toString());
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return display;
+}
 
 export default function Homes() {
   const nav = useNavigate()
@@ -14,8 +60,17 @@ export default function Homes() {
   // --- DATA STATE ---
   const [featured, setFeatured] = useState([])
   const [latestPosts, setLatestPosts] = useState([]) // State chứa bài viết mới nhất
-  const [blogs, setBlogs] = useState([]) 
-  const [stats, setStats] = useState({ posts: 0, landlords: 0, views: 0 }) 
+  const [stats, setStats] = useState({ 
+    rooms: "0",
+    landlords: "0",
+    posts: "0",
+    reviews: "0",
+   })
+    const animatedRooms = useCountUp(stats.rooms)
+    const animatedLandlords = useCountUp(stats.landlords)
+    const animatedPosts = useCountUp(stats.posts)
+    const animatedReviews = useCountUp(stats.reviews)
+
   const [loadingHome, setLoadingHome] = useState(true)
 
   // --- API CALL ---
@@ -28,12 +83,11 @@ export default function Homes() {
       try {
         // Gọi song song các API (bao gồm API Posts để lấy bài mới nhất)
         const results = await Promise.allSettled([
-            api.get('/posts', { signal: controller.signal }),      // 0: Posts
-            api.get('/blogs', { signal: controller.signal }),      // 1: Blogs
-            api.get('/home/stats', { signal: controller.signal })  // 2: Stats
+            api.get('/posts', { signal: controller.signal, withCredentials: false}),      // 0: Posts
+            api.get('/home-stats', { signal: controller.signal, withCredentials: false})  // 2: Stats
         ])
 
-        const [postsRes, blogsRes, statsRes] = results;
+        const [postsRes, statsRes] = results;
 
         // 1. Xử lý Posts (Lấy bài mới nhất)
         if (postsRes.status === 'fulfilled') {
@@ -45,6 +99,7 @@ export default function Homes() {
                 price: p.price,
                 area: p.area,
                 created_at: p.created_at,
+                city: p.province?.name || p.province_name || 'Chưa xác định',
                 // Nối chuỗi địa chỉ
                 address: [
                   p.address, 
@@ -64,28 +119,18 @@ export default function Homes() {
             setFeatured(sorted.slice(0, 3)) // (Tùy chọn) Nếu bạn dùng featured ở đâu đó
         }
 
-        // 2. Xử lý Blogs
-        if (blogsRes.status === 'fulfilled') {
-            const rawBlogs = blogsRes.value.data?.data || []
-            setBlogs(rawBlogs.slice(0, 3).map(b => ({
-                id: b.id,
-                title: b.title,
-                excerpt: b.excerpt || b.content?.substring(0, 100) + '...', 
-                img: b.image || 'https://via.placeholder.com/600x400',
-                slug: b.slug
-            })))
-        }
 
-        // 3. Xử lý Stats
+        // 2. Xử lý Stats
         if (statsRes.status === 'fulfilled') {
             const resData = statsRes.value.data; 
             const statsData = resData?.data || {};
             
             setStats({
-                posts: statsData.posts || 0,
-                landlords: statsData.landlords || 0,
-                views: statsData.views || 0
-            })
+                rooms: statsData.rooms || '0',
+                landlords: statsData.landlords || '0',
+                posts: statsData.posts || '0',
+                reviews: statsData.reviews || '0',
+            });
         }
 
       } catch (err) {
@@ -129,8 +174,8 @@ export default function Homes() {
                     </div>
 
                     <h1 className="hero-title">
-                        Tìm <span className="text-gradient">Không Gian Sống</span> <br />
-                        Đẳng Cấp
+                        Tìm Kiếm <span className="text-gradient">Không Gian Sống </span>
+                        Riêng
                     </h1>
                     
                     <p className="hero-desc">
@@ -180,46 +225,48 @@ export default function Homes() {
         <div className="container">
             <div className="stats-card">
                     <div className="stats-grid">
-    {/* 1. Năm Kinh Nghiệm */}
+    {/* 1. Đang cho thuê */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa'}}>
-            <Star size={24} />
+            <HousePlus size={24} />
         </div>
-        <h3 className="stat-value">5+</h3>
-        <p className="stat-label">Năm KN</p>
+        <h3 className="stat-value animate-fade-in">
+            {animatedRooms}
+        </h3>
+        <p className="stat-label">Đang cho thuê</p>
     </div>
 
-    {/* 2. Tổng số bài đăng */}
+    {/* 2. Tổng Chủ Cho thuê */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(52, 211, 153, 0.1)', color: '#34d399'}}>
-            <Home size={24} />
+            <UserRoundCheck size={24} />
         </div>
-        <h3 className="stat-value">
-            {stats.posts ? stats.posts.toLocaleString() : 0}+
+        <h3 className="stat-value animate-fade-in">
+            {animatedLandlords}
         </h3>
-        <p className="stat-label">Phòng Trọ</p>
+        <p className="stat-label">Chủ Cho thuê</p>
     </div>
 
-    {/* 3. Tổng số chủ nhà */}
+    {/* 3. Tổng Bài đăng */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa'}}>
-            <Users size={24} />
+            <ClipboardList size={24} />
         </div>
-        <h3 className="stat-value">
-            {stats.landlords ? stats.landlords.toLocaleString() : 0}+
+        <h3 className="stat-value animate-fade-in">
+            {animatedPosts}
         </h3>
-        <p className="stat-label">Chủ Nhà</p>
+        <p className="stat-label">Bài đăng</p>
     </div>
 
-    {/* 4. Tổng lượt xem */}
+    {/* 4. Tổng Đánh giá tích cực */}
     <div className="stat-item">
         <div className="stat-icon" style={{background: 'rgba(251, 146, 60, 0.1)', color: '#fb923c'}}>
-            <Eye size={24} />
+            <Star size={24} />
         </div>
-        <h3 className="stat-value">
-            {stats.views ? stats.views.toLocaleString() : 0}
+        <h3 className="stat-value animate-fade-in">
+            {animatedReviews}
         </h3>
-        <p className="stat-label">Lượt Xem</p>
+        <p className="stat-label">Bài đánh giá tích cực</p>
     </div>
 </div>
             </div>
@@ -288,7 +335,7 @@ export default function Homes() {
                             <div className="home-card__footer">
                                 <div className="card-specs">
                                     <span>{item.area} m²</span>
-                                    <span>Full nội thất</span>
+                                    <span>{item.city}</span>
                                 </div>
                                 <Link to={`/post/${item.id}`} className="btn-circle">
                                     <ArrowRight size={18}/>
@@ -318,7 +365,7 @@ export default function Homes() {
                     onClick={() => handleLocationClick("Vỹ Dạ")}
                     style={{cursor: 'pointer'}}
                 >
-                    <img src="https://images.unsplash.com/photo-1565610222536-ef125c59da2c?auto=format&fit=crop&q=80&w=1000" className="bento-img" alt="Vỹ Dạ"/>
+                    <img src="https://images.unsplash.com/photo-1641460213122-336c96f558b0?auto=format&fit=crop&q=80&w=1000" className="bento-img" alt="Vỹ Dạ"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
                         <h4 className="bento-title">Vỹ Dạ</h4>
@@ -328,13 +375,13 @@ export default function Homes() {
 
                 <div 
                     className="bento-item"
-                    onClick={() => handleLocationClick("Xuân Phú")}
+                    onClick={() => handleLocationClick("Phú Xuân")}
                     style={{cursor: 'pointer'}}
                 >
-                    <img src="https://images.unsplash.com/photo-1628624747186-a941c725611b?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="Xuân Phú"/>
+                    <img src="https://images.unsplash.com/photo-1664333039578-28ad613ee536?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="Phú Xuân"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
-                        <h4 className="bento-title">Xuân Phú</h4>
+                        <h4 className="bento-title">Phú Xuân</h4>
                         <p className="bento-subtitle">85+ Phòng</p>
                     </div>
                 </div>
@@ -344,7 +391,7 @@ export default function Homes() {
                     onClick={() => handleLocationClick("An Cựu")}
                     style={{cursor: 'pointer'}}
                 >
-                    <img src="https://images.unsplash.com/photo-1558036117-15d82a90b9b1?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="An Cựu"/>
+                    <img src="https://images.unsplash.com/photo-1493606371202-6275828f90f3?auto=format&fit=crop&q=80&w=500" className="bento-img" alt="An Cựu"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
                         <h4 className="bento-title">An Cựu</h4>
@@ -357,7 +404,7 @@ export default function Homes() {
                     onClick={() => handleLocationClick("Huế")}
                     style={{cursor: 'pointer'}}
                 >
-                    <img src="https://images.unsplash.com/photo-1512918760532-3ed64bc80e89?auto=format&fit=crop&q=80&w=800" className="bento-img" alt="Trung tâm"/>
+                    <img src="https://images.unsplash.com/photo-1496588152823-86ff7695e68f?q=80&w=1740?auto=format&fit=crop&q=80&w=800" className="bento-img" alt="Trung tâm"/>
                     <div className="bento-overlay"></div>
                     <div className="bento-content">
                         <h4 className="bento-title">Trung tâm TP</h4>
@@ -378,9 +425,9 @@ export default function Homes() {
 
             <div className="grid-3">
                 {[
-                    { name: "Nguyễn Văn A", role: "Sinh viên Y Dược", text: "Tìm phòng trọ ở Huế chưa bao giờ dễ dàng thế. Hình ảnh trên web rất thực tế.", img: "https://i.pravatar.cc/150?img=11" },
-                    { name: "Trần Thị B", role: "NV Văn phòng", text: "Giao diện đẹp, dễ sử dụng. Thích nhất là tính năng lọc theo khu vực.", img: "https://i.pravatar.cc/150?img=5" },
-                    { name: "Lê Hoàng C", role: "Chủ nhà trọ", text: "Tôi đăng tin trên Apartments rất hiệu quả, khách gọi liên tục.", img: "https://i.pravatar.cc/150?img=3" }
+                    { name: "Nguyễn Văn Việt", role: "Sinh viên Y Dược", text: "Tìm phòng trọ ở Huế chưa bao giờ dễ dàng thế. Hình ảnh trên web rất thực tế.", img: "https://i.pravatar.cc/150?img=59" },
+                    { name: "Trần Thị Lan", role: "NV Văn phòng", text: "Giao diện đẹp, dễ sử dụng. Thích nhất là tính năng lọc theo khu vực.", img: "https://i.pravatar.cc/150?img=5" },
+                    { name: "Lê Hoàng Huy", role: "Chủ nhà trọ", text: "Tôi đăng tin trên Apartments rất hiệu quả, khách gọi liên tục.", img: "https://i.pravatar.cc/150?img=56" }
                 ].map((item, idx) => (
                     <div key={idx} className="testimonial-card">
                         <div className="stars">
@@ -443,33 +490,6 @@ export default function Homes() {
             </div>
         </div>
       </section>
-
-      {/* 8. BLOG SECTION */}
-      {blogs.length > 0 && (
-         <section className="section" style={{borderTop: '1px solid var(--border-light)'}}>
-            <div className="container">
-                <div className="section-top">
-                    <h3 className="section-title">Bài viết hữu ích</h3>
-                    <Link to="/blogs" className="section-subtitle" style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: 0}}>
-                        Xem thêm <ArrowRight size={14}/>
-                    </Link>
-                </div>
-                <div className="grid-3">
-                    {blogs.map(blog => (
-                        <article key={blog.id} className="home-card" style={{border: 'none', background: 'transparent', boxShadow: 'none'}}>
-                            <div className="home-card__img" style={{borderRadius: '16px', overflow: 'hidden'}}>
-                                 <img src={blog.img || 'https://via.placeholder.com/600x400'} alt={blog.title} style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
-                            </div>
-                            <div style={{paddingTop: '20px'}}>
-                                <h3 className="home-card__title" style={{whiteSpace: 'normal', lineHeight: 1.4}}>{blog.title}</h3>
-                                <p className="hero-desc" style={{fontSize: '14px', marginBottom: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>{blog.excerpt}</p>
-                            </div>
-                        </article>
-                    ))}
-                </div>
-            </div>
-         </section>
-      )}
 
     </div>
   )

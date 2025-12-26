@@ -1,5 +1,6 @@
 // src/pages/lessor/LessorReviews.jsx
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { API_URL } from '@/config/api.js';
 
 export default function LessorReviews() {
@@ -70,11 +71,16 @@ export default function LessorReviews() {
                 <td>{r.id}</td>
                 <td>
                   {r.post?.title ? (
-                    <>
-                      {r.post.title} <span style={{ opacity: 0.7 }}>#{r.post.id}</span>
-                    </>
+                    <Link
+                      to={`/post/${r.post.id}`}
+                      target="_blank"                      
+                      className="post-link"
+                    >
+                      {r.post.title}
+                      <span className="post-id"> #{r.post.id}</span>
+                    </Link>
                   ) : (
-                    <>#{r.post_id}</>
+                    <span className="post-id-only">#{r.post_id}</span>
                   )}
                 </td>
                 <td>{r.user?.name || r.user_id}</td>

@@ -1471,3 +1471,41 @@
   color: #1c79dd; /* đậm hơn khi hover */
 }
 
+.lessor-form__row--features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 16px;
+}
+
+/* danh sách checkbox */
+.lessor-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px 16px;
+  margin-top: 8px;
+}
+
+/* từng checkbox */
+.lessor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* input checkbox */
+.lessor-checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* responsive giống admin */
+@media (max-width: 900px) {
+  .lessor-form__row--features {
+    grid-template-columns: 1fr;
+  }
+}

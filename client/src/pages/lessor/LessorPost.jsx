@@ -28,15 +28,15 @@ export default function LessorPost(){
     fd.append('category_id', String(categoryId))
     if(images) Array.from(images).forEach(f=>fd.append('images[]', f))
 
-    try {
-      await api.post('/posts', fd, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'multipart/form-data' }
-      })
-      alert('Đăng bài thành công')
-      navigate('/lessor/posts')
-    } catch (err) {
-      alert('Có lỗi khi đăng bài: ' + (err.message || 'Lỗi không xác định'))
-    }
+    await api.post('/posts', fd, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      }
+    })
+
+    alert('Đăng bài thành công')
+    navigate('/lessor/posts')
   }
 
   return (

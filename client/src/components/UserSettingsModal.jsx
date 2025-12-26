@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { API_URL } from '../config/api.js';
+import { Pencil, Lock, Image, Star } from "lucide-react"
 
 export default function UserSettingsModal({ user, onClose, onUpdated }) {
 
@@ -514,12 +515,12 @@ const maxBirthDate = `${year}-${month}-${day}`
       <h2 className="settings-title">Cài đặt tài khoản</h2>
 
       <div className="settings-main-grid">
-        <button className="settings-main-btn" onClick={() => setStage("info")}>✏ Đổi thông tin cá nhân</button>
-        <button className="settings-main-btn" onClick={() => setStage("password")}>🔒 Đổi mật khẩu</button>
-        <button className="settings-main-btn" onClick={() => setStage("avatar")}>🖼 Đổi ảnh đại diện</button>
+        <button className="settings-main-btn" onClick={() => setStage("info")}><Pencil size={14} color="#38bdf8" /> Đổi thông tin cá nhân</button>
+        <button className="settings-main-btn" onClick={() => setStage("password")}><Lock size={14} color="#facc15" /> Đổi mật khẩu</button>
+        <button className="settings-main-btn" onClick={() => setStage("avatar")}><Image size={14} color="#4ade80" /> Đổi ảnh đại diện</button>
         {user.role === "user" && (
           <button className="settings-main-btn" onClick={handleOpenLessor}>
-            ⭐ Yêu cầu nâng cấp lên Lessor
+            <Star size={14} color="#a78bfa" /> Yêu cầu nâng cấp lên Lessor
             {lessorCooldown>0 && <div style={{fontSize:12, marginTop:6, color:'#cbd5e1'}}>Chờ {formatTime(lessorCooldown)}</div>}
           </button>
         )}

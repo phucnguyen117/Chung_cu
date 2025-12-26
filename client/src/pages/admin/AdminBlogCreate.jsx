@@ -160,7 +160,7 @@ export default function AdminBlogCreate() {
   // Tên file hiển thị bên cạnh nút
   const fileNamesText =
     coverFiles.length === 0
-      ? 'Chưa chọn ảnh nào (tối đa 3 ảnh)'
+      ? 'Chưa chọn ảnh nào '
       : coverFiles.map(f => f.name).join(', ')
 
   return (
@@ -200,7 +200,7 @@ export default function AdminBlogCreate() {
               />
             </label>
 
-            <label className="admin-field">
+            {/* <label className="admin-field">
               <span>Tiêu đề phụ / mô tả ngắn</span>
               <textarea
                 className="admin-input"
@@ -209,10 +209,10 @@ export default function AdminBlogCreate() {
                 onChange={e => setSubtitle(e.target.value)}
                 placeholder="Chuẩn bị những gì trước khi đi xem phòng, nên hỏi chủ nhà câu gì..."
               />
-            </label>
+            </label> */}
 
             <label className="admin-field gf-field-card">
-              <span>Tags bài viết</span>
+              {/* <span>Tags bài viết</span>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {tags.map((t, i) => (
@@ -236,7 +236,7 @@ export default function AdminBlogCreate() {
                   placeholder="Thêm tag và nhấn Enter"
                   style={{ minWidth: 160 }}
                 />
-              </div>
+              </div> */}
 
               <span style={{ display: 'block', marginTop: 12 }}>Nội dung bài viết *</span>
 
@@ -244,6 +244,7 @@ export default function AdminBlogCreate() {
                 <button
                   type="button"
                   className="admin-btn admin-btn--outline"
+                  style={{ color: '#ffff' }}                  
                   onClick={() => editorImageInputRef.current?.click()}
                 >
                   Chèn ảnh vào nội dung
@@ -260,7 +261,7 @@ export default function AdminBlogCreate() {
                 onDrop={(e) => { e.preventDefault(); const files = e.dataTransfer?.files; if (files && files.length) handleEditorImageFile(files[0]) }}
                 onPaste={(e) => { const files = e.clipboardData?.files; if (files && files.length) { handleEditorImageFile(files[0]) } }}
                 placeholder="Nhập nội dung chi tiết, có thể chèn ảnh bằng kéo/thả, dán hoặc nút Chèn ảnh..."
-                style={{ fontFamily: 'inherit' }}
+                style={{ fontFamily: 'inherit', height: '100%' }}
               />
 
               <input
@@ -276,12 +277,13 @@ export default function AdminBlogCreate() {
           {/* Cột phải: ảnh bìa + nút đăng */}
           <div className="admin-blog-form__right">
             <label className="admin-field">
-              <span>Ảnh bìa (1–3 ảnh)</span>
+              <span>Ảnh bìa *</span>
 
               <div className="admin-upload">
                 <button
                   type="button"
                   className="admin-btn admin-btn--outline"
+                  style={{ color: '#ffff' }}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   Chọn ảnh bìa
@@ -303,19 +305,39 @@ export default function AdminBlogCreate() {
                   {coverPreviews.map((src, idx) => (
                     <div key={idx} className="admin-blog-cover-thumb">
                       <img src={src} alt={`Cover preview ${idx + 1}`} />
+                      <div className="admin-blog-cover-actions">
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--danger"
+                          onClick={() => handleRemoveCover(idx)}
+                          disabled={loading}
+                        >
+                          Xóa ảnh
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
-            </label>
 
-            <button
-              type="submit"
-              className="admin-btn admin-btn--primary"
-              disabled={loading}
-            >
-              {loading ? 'Đang lưu...' : 'Đăng bài blog'}
-            </button>
+              <div className="admin-form__actions">
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--ghost"
+                  onClick={() => navigate('/admin/blog-list')}
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn admin-btn--primary"
+                  disabled={loading}
+                >
+                  {loading ? 'Đang lưu...' : 'Đăng bài blog'}
+                </button>
+              </div>
+            </label>
           </div>
         </form>
       </div>

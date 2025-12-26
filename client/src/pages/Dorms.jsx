@@ -1,6 +1,7 @@
 // src/pages/DormsExplore.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Search } from 'lucide-react';
 import axios from 'axios'
 import '../assets/style/style.css'
 
@@ -488,7 +489,7 @@ export default function DormsExplore() {
             }}
           >
             <div className="re-input re-input--grow">
-              <span className="re-ico">🔎</span>
+              <span className="re-ico"><Search size={16} strokeWidth={3} /></span>
               <input
                 value={q}
                 onChange={e => setQ(e.target.value)}

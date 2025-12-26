@@ -18,6 +18,11 @@ export default function LessorPostEdit() {
   })
 
   const [categories, setCategories] = useState([])
+  const [amenities, setAmenities] = useState([])
+  const [envFeatures, setEnvFeatures] = useState([])
+
+  const [selectedAmenities, setSelectedAmenities] = useState([])
+  const [selectedEnvFeatures, setSelectedEnvFeatures] = useState([])
 
   // ===== GIỮ NGUYÊN ẢNH ĐẠI DIỆN CŨ =====
   const [imageFile, setImageFile] = useState(null)
@@ -42,16 +47,16 @@ export default function LessorPostEdit() {
 
         const token = localStorage.getItem('access_token')
 
-        const [postRes, catRes] = await Promise.all([
+        const [postRes, catRes, amenRes, envRes] = await Promise.all([
           fetch(`${API_URL}/posts/${id}`, {
             headers: {
               Accept: 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
           }),
-          fetch(`${API_URL}/categories`, {
-            headers: { Accept: 'application/json' },
-          }),
+          fetch(`${API_URL}/categories`, { headers: { Accept: 'application/json' } }),
+          fetch(`${API_URL}/amenities`, { headers: { Accept: 'application/json' } }),
+          fetch(`${API_URL}/environment-features`, { headers: { Accept: 'application/json' } }),
         ])
 
         const postJson = await postRes.json()
@@ -71,6 +76,13 @@ export default function LessorPostEdit() {
           status: p.status || 'draft',
         })
 
+        setSelectedAmenities(
+          Array.isArray(p.amenities) ? p.amenities.map(a => a.id) : []
+        )
+
+        const envs = p.environmentFeatures || p.environment_features || []
+        setSelectedEnvFeatures(Array.isArray(envs) ? envs.map(e => e.id) : [])
+
         // ===== GIỮ LOGIC ẢNH ĐẠI DIỆN CŨ =====
         if (p.main_image_url) {
           setImagePreview(p.main_image_url)
@@ -86,6 +98,17 @@ export default function LessorPostEdit() {
           throw new Error(catJson.message || 'Không tải được danh mục.')
         }
         setCategories(catJson.data || [])
+
+      const amenJson = await amenRes.json()
+      if (amenRes.ok && amenJson.status !== false) {
+        setAmenities(amenJson.data || amenJson || [])
+      }
+
+      const envJson = await envRes.json()
+      if (envRes.ok && envJson.status !== false) {
+        setEnvFeatures(envJson.data || envJson || [])
+      }
+
       } catch (err) {
         console.error(err)
         setError(err.message || 'Có lỗi khi tải dữ liệu.')
@@ -101,6 +124,17 @@ export default function LessorPostEdit() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+  }
+  const toggleAmenity = (id) => {
+    setSelectedAmenities(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleEnvFeature = (id) => {
+    setSelectedEnvFeatures(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
   }
 
   // ===== GIỮ NGUYÊN ẢNH ĐẠI DIỆN =====
@@ -147,7 +181,13 @@ export default function LessorPostEdit() {
       Object.entries(form).forEach(([k, v]) =>
         formData.append(k, v !== '' ? v : '')
       )
+      selectedAmenities.forEach(id => {
+        formData.append('amenity_ids[]', id)
+      })
 
+      selectedEnvFeatures.forEach(id => {
+        formData.append('environment_ids[]', id)
+      })
       // ===== GIỮ ẢNH ĐẠI DIỆN CŨ =====
       if (imageFile) {
         formData.append('image', imageFile)
@@ -316,8 +356,48 @@ export default function LessorPostEdit() {
               </div>
             </div>
 
+            {/* TIỆN ÍCH */}
+            <div className="lessor-form__row lessor-form__row--features">
+              <div className="lessor-form__col">
+                <div className="lessor-label">Tiện ích</div>
+
+                <div className="lessor-checkbox-list">
+                  {amenities.length === 0 && <p>Không có tiện ích.</p>}
+                  {amenities.map(a => (
+                    <label key={a.id} className="lessor-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedAmenities.includes(a.id)}
+                        onChange={() => toggleAmenity(a.id)}
+                      />
+                      {a.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* MÔI TRƯỜNG XUNG QUANH */}
+              <div className="lessor-form__col">
+                <div className="lessor-label">Môi trường xung quanh</div>
+
+                <div className="lessor-checkbox-list">
+                  {envFeatures.length === 0 && <p>Không có dữ liệu.</p>}
+                  {envFeatures.map(e => (
+                    <label key={e.id} className="lessor-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedEnvFeatures.includes(e.id)}
+                        onChange={() => toggleEnvFeature(e.id)}
+                      />
+                      {e.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* ẢNH ĐẠI DIỆN (GIỮ NGUYÊN) */}
-            <div className="lessor-form__row">
+            {/* <div className="lessor-form__row">
               <div className="lessor-form__col">
                 <label className="lessor-label">
                   Ảnh đại diện
@@ -329,10 +409,10 @@ export default function LessorPostEdit() {
                   />
                 </label>
               </div>
-            </div>
+            </div> */}
 
             {/* ===== GALLERY ẢNH ĐÃ ĐĂNG ===== */}
-            {existingImages.length > 0 && (
+            {/* {existingImages.length > 0 && (
               <div className="lessor-form__row">
                 <div className="lessor-form__col">
                   <label className="lessor-label">Ảnh đã đăng</label>
@@ -352,10 +432,10 @@ export default function LessorPostEdit() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* ===== THÊM ẢNH KHÁC ===== */}
-            <div className="lessor-form__row">
+            {/* <div className="lessor-form__row">
               <div className="lessor-form__col">
                 <label className="lessor-label">Thêm ảnh khác</label>
                 <input
@@ -381,7 +461,7 @@ export default function LessorPostEdit() {
                   ))}
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* ACTIONS */}
             <div className="lessor-form__actions">

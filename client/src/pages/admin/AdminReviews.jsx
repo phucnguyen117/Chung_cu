@@ -1,5 +1,6 @@
 // src/pages/admin/AdminReviews.jsx
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 // giống các page khác
 const API_BASE_URL =
@@ -151,12 +152,14 @@ export default function AdminReviews() {
               <tr key={r.id}>
                 <td>{r.id}</td>
                 <td>
-                  #{r.post_id}{' '}
-                  {r.post?.title && (
-                    <span style={{ color: '#4ade80' }}>
-                      – {r.post.title}
-                    </span>
-                  )}
+                  <Link
+                    to={`/post/${r.post_id}`}
+                    target="_blank"
+                    className="post-link"
+                  >
+                    #{r.post_id}
+                    {r.post?.title && ` – ${r.post.title}`}
+                  </Link>
                 </td>
                 <td>{r.user?.name || `User #${r.user_id}`}</td>
                 <td>{r.rating}/5</td>
