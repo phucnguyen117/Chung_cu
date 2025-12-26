@@ -7,6 +7,7 @@ import Register from '../pages/Register'
 import UserSettingsModal from '../components/UserSettingsModal'
 import NotificationsBell from './NotificationsBell'
 import { Heart } from 'lucide-react';
+import { X } from 'lucide-react'
 
 const API_BASE_URL =
   (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000') + '/api'
@@ -422,7 +423,13 @@ export default function Header() {
 
                 <aside className={'header-drawer' + (drawerOpen ? ' is-open' : '')} role="dialog" aria-label="Menu">
                   <div className="header-drawer__inner">
-
+<button
+  className="header-drawer__close"
+  aria-label="Đóng menu"
+  onClick={() => setDrawerOpen(false)}
+>
+  ✕
+</button>
                     {user ? (
                       <div className="header-drawer__user">
                         <div className="header-drawer__avatar">

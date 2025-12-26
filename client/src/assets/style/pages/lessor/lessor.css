@@ -1503,9 +1503,163 @@
   cursor: pointer;
 }
 
+/* ensure mobile-specific controls are hidden on desktop by default */
+.lessor-mobile-menu-btn { display: none; }
+.lessor-mobile-backdrop, .lessor-mobile-menu { display: none; }
+
 /* responsive giống admin */
 @media (max-width: 900px) {
   .lessor-form__row--features {
     grid-template-columns: 1fr;
+  }
+
+  /* Layout adjustments for mobile */
+  .lessor-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .lessor-sidebar {
+    display: none;
+  }
+
+  .lessor-main {
+    padding: 12px 14px;
+  }
+
+  /* Burger button */
+  .lessor-mobile-menu-btn {
+    display: inline-block;
+    width: 34px;
+    height: 26px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid rgba(148,163,184,0.06);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px 6px;
+    margin-left: 8px;
+    cursor: pointer;
+  }
+
+  .lessor-mobile-menu-btn span {
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg,#38bdf8,#22c55e);
+    border-radius: 2px;
+  }
+
+  /* Mobile menu (drawer) */
+  .lessor-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 40;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    display: block;
+  }
+  .lessor-mobile-backdrop.is-open { opacity: 1; }
+
+  .lessor-mobile-menu {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 92%;
+    background: linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(2,6,23,1) 100%);
+    color: #e5e7eb;
+    z-index: 50;
+    padding: 22px;
+    box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+    transform: translateX(110%);
+    transition: transform 220ms ease;
+    overflow: auto;
+    display: block;
+  }
+
+  .lessor-mobile-menu.is-open { transform: translateX(0); }
+
+  .lessor-mobile-menu-close {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #cbd5e1;
+  }
+
+  .lessor-mobile-userbox {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .lessor-mobile-userbox .avatar-big {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: 999px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    display: block;
+    overflow: hidden;
+  }
+
+  /* fallback initial */
+  .lessor-mobile-userbox .avatar-big.fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(34,197,94,0.08));
+    color: #e6f6ff;
+    font-weight: 700;
+    font-size: 20px;
+  }
+
+  .lessor-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lessor-mobile-nav .lessor-menu__link {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+
+  .lessor-menu__section {
+    margin-top: 12px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Make the chart area more compact on mobile to avoid overflow */
+  .chart-bar-wrapper {
+    height: 140px; /* reduced from 220px */
+    gap: 12px;
+  }
+
+  .chart-bar__group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  /* hide small numeric values to save vertical space */
+  .chart-bar__value--sm {
+    display: none;
+  }
+
+  /* allow horizontal scrolling if cramped */
+  .chart-bar-wrapper--grouped {
+    overflow-x: auto;
+    padding-bottom: 8px;
   }
 }

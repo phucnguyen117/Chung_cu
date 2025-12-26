@@ -532,9 +532,10 @@ export default function HousesExplore() {
               <option value="price_asc">Giá tăng dần</option>
               <option value="price_desc">Giá giảm dần</option>
               <option value="area_desc">Diện tích lớn</option>
+            
             </select>
 
-            <button className="re-btn re-btn--primary" type="submit">
+             <button className="re-btn re-btn--primary" type="submit">
               Tìm
             </button>
           </form>

@@ -172,28 +172,28 @@ export default function AdminDashboard() {
   }, [status, categoryId, q, page, token])
 
   // ================== LOAD LESSOR REQUESTS ==================
-  const loadLessorRequests = async () => {
-    try {
-      setLessorLoading(true)
+const loadLessorRequests = async () => {
+  try {
+    setLessorLoading(true)
 
-      const res = await fetch(`${API_BASE_URL}/admin/lessor-requests`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    const res = await fetch(`${API_BASE_URL}/admin/lessor-requests`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
 
-      const data = await safeJson(res)
-      if (!res.ok) throw new Error(data?.message)
+    const data = await safeJson(res)
+    if (!res.ok) throw new Error(data?.message)
 
-      const all = data?.data || data || []
-      // Chỉ hiển thị những yêu cầu chờ xử lý (pending)
-      const pending = all.filter(r => String(r.status).toLowerCase() === 'pending')
-      setLessorRequests(pending)
+    const all = Array.isArray(data?.data) ? data.data : []
+    const pending = all.filter(r => r.status === 'pending')
+    setLessorRequests(pending)
 
-    } catch (err) {
-      setLessorError(normalizeErrorMessage(err))
-    } finally {
-      setLessorLoading(false)
-    }
+  } catch (err) {
+    setLessorError(normalizeErrorMessage(err))
+  } finally {
+    setLessorLoading(false)
   }
+}
+
 
   useEffect(() => {
     // initial load
@@ -327,7 +327,8 @@ export default function AdminDashboard() {
       setSelectedRequest(null);
 
       // refresh from server to ensure global consistency
-      await loadLessorRequests()
+     setLessorRequests(prev => prev.filter(r => r.id !== id))
+
 
       // non-blocking success feedback
       setActionMessage(data?.message || 'Thao tác thành công')
@@ -453,10 +454,20 @@ export default function AdminDashboard() {
           <p className="email">{adminUser?.email}</p>
         </div>
 
-        <a href="/admin" className="admin-menu__link">Dashboard</a>
+        <a href="/admin" className="admin-menu__link">Tổng quan</a>
         <a href="/admin/posts" className="admin-menu__link">Bài đăng</a>
         <a href="/admin/users" className="admin-menu__link">Người dùng</a>
-        <a href="/admin/lessor" className="admin-menu__link">Yêu cầu Lessor</a>
+        <a href="/admin/reviews" className="admin-menu__link">Đánh giá</a>
+        <a href="/admin/blog-list" className="admin-menu__link">Blog</a>
+
+        <div className="admin-menu__section">DANH MỤC HỆ THỐNG</div>
+        <a href="/admin/categories" className="admin-menu__link">Danh mục</a>
+        <a href="/admin/amenities" className="admin-menu__link">Tiện ích</a>
+        <a href="/admin/environment-features" className="admin-menu__link">Môi trường</a>
+        <a href="/admin/locations" className="admin-menu__link">Địa lý</a>
+        <a href="/admin/saved-posts" className="admin-menu__link">Bài đã lưu</a>
+
+
         <a href="/" className="admin-menu__link">Trang chủ</a>
       </div>
 

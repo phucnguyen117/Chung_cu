@@ -740,6 +740,39 @@ body {
   color: #111;
 }
 
+@media (max-width: 640px) {
+  /* Mobile: keep input full-width, but place sort ("Tin mới") and Search button on the same row */
+  .filterbar {
+    align-items: center;
+  }
+
+  .filterbar .input {
+    flex: 1 1 100%;
+    min-width: 0;
+    order: 1;
+  }
+
+  .filterbar .select {
+    flex: 1 1 50%;
+    min-width: 0;
+    order: 2;
+  }
+
+  .filterbar .btn--dark {
+    flex: 1 1 50%;
+    min-width: 0;
+    order: 2;
+  }
+
+  .filterbar .btn--ghost {
+    flex: 1 1 100%;
+    min-width: 0;
+    order: 3;
+  }
+
+  .filterbar .btn { height: 44px; display:flex; align-items:center; justify-content:center; }
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -1735,6 +1768,31 @@ body {
     font-size: 12px;
   }
 
+  /* Mobile tweaks: stack actions and reduce image heights */
+  @media (max-width: 640px) {
+    .re-card__foot {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .re-card__foot .re-btn {
+      width: 100%;
+      flex: none;
+    }
+
+    .re-card__foot .time {
+      align-self: flex-start;
+    }
+
+    /* Slightly smaller images on mobile for better vertical rhythm */
+    .card__media img,
+    .blog-card__media img,
+    .re-card__media img {
+      height: 150px !important;
+    }
+  }
+
   /* Chips (bộ lọc đã áp dụng) */
   .re-chips {
     display: flex;
@@ -2124,23 +2182,26 @@ body {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 cột */
     gap: 8px;
+    align-items: center;
   }
 
-  /* Ô search & nút Tìm chiếm full hàng */
-  .rebar-search--compact .re-input--grow,
+  /* Top row: search input (col 1) + submit button (col 2) */
+  .rebar-search--compact .re-input--grow {
+    grid-column: 1 / 2;
+  }
+
   .rebar-search--compact .re-btn[type="submit"] {
-    grid-column: 1 / -1;
+    grid-column: 2 / 3;
+    padding: 9px 14px;
   }
 
+  /* Let the next inputs naturally flow into second row (each occupies one column)
+     and any full-width controls can use grid-column: 1 / -1 when needed. */
   .rebar-search--compact input,
   .rebar-search--compact select {
     width: 100%;
     font-size: 14px;
     padding: 8px 10px;
-  }
-
-  .rebar-search--compact .re-btn[type="submit"] {
-    padding: 9px 14px;
   }
 }
 /* ======================
@@ -2381,6 +2442,52 @@ body {
   font-size: 20px;
   margin-bottom: 10px;
 }
+
+/* ==========================
+   Conservative Mobile Defaults
+   (applies only on small screens, safe for desktop)
+   ========================== */
+@media (max-width: 900px) {
+  /* General containers */
+  .container { padding-left: 12px; padding-right: 12px; }
+
+  /* Collapse common grids to single column for pages without specific styles */
+  .grid, .re-grid, .blog-grid, .hero-grid { grid-template-columns: 1fr !important; }
+
+  /* Make hero floating cards flow on mobile */
+  .hero-floating-card { position: static; margin-top: 12px; width: auto; }
+
+  /* Header adjustments to avoid overflow on small screens */
+  .site-header__inner { height: 57px; padding: 8px 0;  row-gap: 8px; align-items: center; }
+  .site-header__actions { width: 100%; justify-content: flex-end; align-items: center; gap: 8px; }
+
+  /* Balance avatar + burger on mobile */
+  .header-avatar { width: 34px; height: 34px; }
+  .header-burger { margin-left: 6px; }
+  .header-drawer__close { top: 14px; right: 14px; }
+
+  /* Post detail: reduce hero height and tighten paddings */
+  .pd-hero__img { height: 200px; object-fit: cover; }
+  .pd-hero__content { padding: 12px; }
+
+  /* Blog: ensure aside stacks above content when needed */
+  .blog-layout { grid-template-columns: 1fr; }
+
+  /* Listing layout: ensure aside moves below main */
+  .re-layout { display: block; }
+
+  /* Buttons and inputs: make touch-friendly */
+  .btn, .re-btn, .pd-btn { min-height: 44px; padding: 10px 12px; }
+
+  /* Images: slightly smaller for better vertical rhythm */
+  .card__media img, .blog-card__media img, .re-card__media img { height: 140px !important; }
+
+  /* Ensure filter controls remain usable */
+  .filterbar .input { width: 100%; }
+}
+
+/* End conservative mobile defaults */
+
 .settings-lessor-sub {
   color: #aaa;
   margin-bottom: 16px;
@@ -2401,4 +2508,33 @@ body {
   font: inherit;
   cursor: pointer;
   text-align: left;
+}
+/* ===== NÚT ĐÓNG MENU MOBILE (X) ===== */
+.header-drawer__inner {
+  position: relative;
+}
+
+.header-drawer__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+
+  width: 30px;
+  height: 30px;
+
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.67);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.header-drawer__close:active {
+  transform: scale(0.92);
 }

@@ -6,12 +6,17 @@ import { API_URL } from '@/config/api.js';
 // ===== helper build avatar url =====
 function buildAvatarUrl(avatar) {
   if (!avatar) return null
+
+  // already an absolute URL
   if (avatar.startsWith('http')) return avatar
 
-  const base =
-    import.meta.env.VITE_API_URL ||
-    'http://127.0.0.1:8000'
+  const base = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
+  // If avatar already contains /storage prefix, join safely
+  if (avatar.startsWith('/storage')) return `${base}${avatar}`
+  if (avatar.startsWith('storage/')) return `${base}/${avatar}`
+
+  // Otherwise assume a storage filename and prefix accordingly
   return `${base}/storage/${avatar}`
 }
 
@@ -22,6 +27,7 @@ export default function LessorLayout() {
   // ===== USER STATE =====
   const [user, setUser] = useState(null)
   const [avatarError, setAvatarError] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   // ===== LOAD USER PROFILE =====
   useEffect(() => {
@@ -115,7 +121,54 @@ export default function LessorLayout() {
               </strong>
             </div>
           </div>
+
+          {/* BURGER (mobile) */}
+          <button
+            className={`lessor-mobile-menu-btn ${menuOpen ? 'is-active' : ''}`}
+            onClick={() => setMenuOpen(true)}
+            aria-label="Mở menu"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </header>
+
+        {/* MOBILE MENU / BACKDROP */}
+        {menuOpen && (
+          <>
+            <div className={`lessor-mobile-backdrop ${menuOpen ? 'is-open' : ''}`} onClick={() => setMenuOpen(false)} />
+
+            <aside className={`lessor-mobile-menu ${menuOpen ? 'is-open' : ''}`} role="dialog" aria-label="Menu">
+              <div className="lessor-mobile-menu-close" onClick={() => setMenuOpen(false)}>×</div>
+
+              <div className="lessor-mobile-userbox">
+                {avatarSrc ? (
+                  <img className="avatar-big" src={avatarSrc} onError={() => setAvatarError(true)} />
+                ) : (
+                  <div className="avatar-big fallback">{user?.name?.[0]?.toUpperCase() || 'U'}</div>
+                )}
+                <p className="name">{user?.name || 'Người dùng'}</p>
+                <p className="email">{user?.email}</p>
+              </div>
+
+              <nav className="lessor-mobile-nav">
+                <Link to="/lessor" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Tổng quan</Link>
+                <Link to="/lessor/posts" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Bài đăng</Link>
+                <Link to="/lessor/posts/create" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Tạo bài</Link>
+                <Link to="/lessor/reviews" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Đánh giá</Link>
+                <Link to="/lessor/appointments" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Cuộc hẹn</Link>
+
+                <div className="lessor-menu__section">HỆ THỐNG</div>
+                <Link to="/lessor/categories" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Danh mục</Link>
+                <Link to="/lessor/amenities" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Tiện ích</Link>
+
+                <Link to="/" className="lessor-menu__link" onClick={() => setMenuOpen(false)}>Trang chủ</Link>
+              </nav>
+
+            </aside>
+          </>
+        )}
 
         {/* NỘI DUNG */}
         <Outlet />

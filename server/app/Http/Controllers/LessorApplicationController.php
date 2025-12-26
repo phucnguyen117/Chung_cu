@@ -77,32 +77,61 @@ class LessorApplicationController extends Controller
     }
 
     // ADMIN LIST YÊU CẦU
-    public function adminIndex(Request $request)
-    {
-        $admin = Auth::user();
-        if (($admin->role ?? 'user') !== 'admin') {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
+    // public function adminIndex(Request $request)
+    // {
+    //     $admin = Auth::user();
+    //     if (($admin->role ?? 'user') !== 'admin') {
+    //         return response()->json(['message' => 'Forbidden'], 403);
+    //     }
 
-        $query = LessorApplication::with('user')->latest();
+    //     $query = LessorApplication::with('user')->latest();
 
-        if ($status = $request->get('status')) {
-            $query->where('status', $status);
-        }
+    //     if ($status = $request->get('status')) {
+    //         $query->where('status', $status);
+    //     }
 
-        $applications = $query->paginate($request->get('per_page', 20));
+    //     $applications = $query->paginate($request->get('per_page', 20));
 
+    //     return response()->json([
+    //         'status' => true,
+    //         'data'   => $applications->items(),    // chỉ gửi array
+    //         'meta'   => [
+    //             'current_page' => $applications->currentPage(),
+    //             'last_page'    => $applications->lastPage(),
+    //             'per_page'     => $applications->perPage(),
+    //             'total'        => $applications->total(),
+    //         ],
+    //     ]);
+    // }
+public function adminIndex(Request $request)
+{
+    $admin = Auth::user();
+    if (($admin->role ?? 'user') !== 'admin') {
         return response()->json([
-            'status' => true,
-            'data'   => $applications->items(),    // chỉ gửi array
-            'meta'   => [
-                'current_page' => $applications->currentPage(),
-                'last_page'    => $applications->lastPage(),
-                'per_page'     => $applications->perPage(),
-                'total'        => $applications->total(),
-            ],
-        ]);
+            'status' => false,
+            'message' => 'Forbidden',
+        ], 403);
     }
+
+    $query = LessorApplication::with('user')->latest();
+
+    if ($status = $request->get('status')) {
+        $query->where('status', $status);
+    }
+
+    $applications = $query->paginate($request->get('per_page', 20));
+
+    return response()->json([
+        'status' => true,
+        'data'   => $applications->items(), // ✅ ARRAY
+        'meta'   => [
+            'current_page' => $applications->currentPage(),
+            'last_page'    => $applications->lastPage(),
+            'total'        => $applications->total(),
+        ]
+    ]);
+}
+
 
     // ADMIN DUYỆT
     public function approve($id)

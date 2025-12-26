@@ -699,9 +699,9 @@
     min-width: 0;
   }
 
-  /* Ô search: full hàng trên cùng */
+  /* Top row: search input (col 1) + submit button (col 2) */
   .rebar-search--compact > :first-child {
-    grid-column: 1 / -1;
+    grid-column: 1 / 2;
   }
 
   .rebar-search--compact input,
@@ -712,9 +712,10 @@
   }
 
   .rebar-search--compact .re-btn[type='submit'] {
-    width: 100%;
+    grid-column: 2 / 3;
     padding: 10px 14px;
     font-size: 15px;
+    width: auto;
   }
 }
 /* nút Bộ lọc nhanh – desktop ẩn, mobile hiện */

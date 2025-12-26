@@ -518,7 +518,7 @@ const maxBirthDate = `${year}-${month}-${day}`
         <button className="settings-main-btn" onClick={() => setStage("info")}><Pencil size={14} color="#38bdf8" /> Đổi thông tin cá nhân</button>
         <button className="settings-main-btn" onClick={() => setStage("password")}><Lock size={14} color="#facc15" /> Đổi mật khẩu</button>
         <button className="settings-main-btn" onClick={() => setStage("avatar")}><Image size={14} color="#4ade80" /> Đổi ảnh đại diện</button>
-        {user.role === "user" && (
+        {(user.role !== 'lessor' && user.role !== 'admin') && (
           <button className="settings-main-btn" onClick={handleOpenLessor}>
             <Star size={14} color="#a78bfa" /> Yêu cầu nâng cấp lên Lessor
             {lessorCooldown>0 && <div style={{fontSize:12, marginTop:6, color:'#cbd5e1'}}>Chờ {formatTime(lessorCooldown)}</div>}
