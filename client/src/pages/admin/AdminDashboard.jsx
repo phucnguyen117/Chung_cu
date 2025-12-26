@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import "@/assets/style/pages/admin.css"
+import avatar from '@/assets/images/default-avatar.png';
 
 const API_BASE_URL =
   (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000") + "/api"
@@ -22,7 +23,7 @@ function getAvatar(user) {
     user?.avatar_url ||
     user?.avatar ||
     user?.profile?.avatar_url ||
-    "../src/assets/images/default-avatar.png"
+    avatar
   )
 }
 

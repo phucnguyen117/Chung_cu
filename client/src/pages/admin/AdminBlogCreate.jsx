@@ -73,26 +73,91 @@ export default function AdminBlogCreate() {
     }, 10)
   }
 
-  const handleEditorImageFile = async (file) => {
-    try {
-      setUploadingInlineImage(true)
+  // Kho chứa ảnh tạm: Key là link ngắn, Value là dữ liệu thật
+  const tempImageMap = useRef({}) 
 
-      // Read as data URL so we can insert immediately without backend
-      await new Promise((resolve, reject) => {
-        const fr = new FileReader()
-        fr.onload = () => {
-          const url = fr.result
-          insertAtCursor(`<img src="${url}" alt="" />`)
-          resolve()
+    // Hàm nén ảnh (giữ nguyên để giảm dung lượng)
+    const compressImage = (file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800; // Giới hạn chiều rộng
+            let w = img.width;
+            let h = img.height;
+            if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; }
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          }
         }
-        fr.onerror = reject
-        fr.readAsDataURL(file)
       })
+    }
+
+    const handleEditorImageFile = async (file) => {
+        try {
+          setUploadingInlineImage(true)
+          
+          // 1. Tạo dữ liệu ảnh thật (đã nén) để dành gửi server
+          const realBase64 = await compressImage(file)
+
+          // 2. Tạo link ảo siêu ngắn để hiển thị trong editor
+          const shortBlobUrl = URL.createObjectURL(file)
+
+          // 3. Lưu cặp đôi này vào kho chứa
+          tempImageMap.current[shortBlobUrl] = realBase64
+
+          // 4. Chèn link ảo vào ô text (Code lúc này chỉ có 1 dòng!)
+          const imgTag = `\n<img src="${shortBlobUrl}" width="100%" />\n`
+          insertAtCursor(imgTag)
+
+        } catch (err) {
+          console.error(err)
+          alert('Lỗi chèn ảnh')
+        } finally { 
+          setUploadingInlineImage(false) 
+        }
+      }
+  
+  // Xóa ảnh bìa hiện có
+  const handleRemoveCover = async () => {
+    if (!window.confirm('Xác nhận xóa ảnh bìa hiện tại?')) return
+
+    try {
+      setSaving(true)
+      const token = localStorage.getItem('access_token')
+      if (!token) throw new Error('Bạn chưa đăng nhập')
+
+      const formData = new FormData()
+      formData.append('_method', 'PUT')
+      formData.append('remove_cover', '1')
+
+      const res = await fetch(`${API_BASE_URL}/admin/blogs/${id}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+        body: formData,
+      })
+
+      const data = await safeJson(res)
+      if (!res.ok || data?.status === false) {
+        throw new Error(data?.message || 'Không xóa được ảnh bìa')
+      }
+
+      setExistingCover(null)
+      setSuccess('Ảnh bìa đã được xóa')
     } catch (err) {
-      console.error('Lỗi insert inline image', err)
-      alert('Không thể chèn ảnh vào nội dung')
+      console.error(err)
+      setError(err.message || 'Có lỗi khi xóa ảnh bìa')
     } finally {
-      setUploadingInlineImage(false)
+      setSaving(false)
     }
   }
 
@@ -102,16 +167,20 @@ export default function AdminBlogCreate() {
     setSuccess('')
 
     if (!title.trim()) {
-      setError('Vui lòng nhập tiêu đề bài viết')
-      return
-    }
-    if (!content.trim()) {
-      setError('Vui lòng nhập nội dung chính')
+      setError('Vui lòng nhập tiêu đề')
       return
     }
 
     try {
-      setLoading(true)
+      setSaving(true)
+      const token = localStorage.getItem('access_token')
+      if (!token) throw new Error('Bạn chưa đăng nhập')
+
+      let finalContent = content
+      Object.entries(tempImageMap.current).forEach(([blobUrl, realBase64]) => {
+        // Thay thế tất cả link ảo bằng link thật
+        finalContent = finalContent.split(blobUrl).join(realBase64)
+      })
 
       const formData = new FormData()
       formData.append('title', title)

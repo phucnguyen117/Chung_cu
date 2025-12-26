@@ -1,6 +1,7 @@
 // src/pages/admin/AdminUsers.jsx
 import { useEffect, useState } from 'react'
 import { API_URL } from '@/config/api.js';
+import avatar from '@/assets/images/default-avatar.png';
 
 // ========================
 // FIX AVATAR FUNCTION
@@ -10,7 +11,7 @@ function getAvatar(u) {
     u?.avatar_url ||
     u?.avatar ||
     u?.profile?.avatar_url ||
-    "../src/assets/images/default-avatar.png"  // Ảnh mặc định khi không có avatar
+    avatar  // Ảnh mặc định khi không có avatar
   )
 }
 

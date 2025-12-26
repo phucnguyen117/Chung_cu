@@ -16,7 +16,7 @@ class HomeStatsController extends Controller
 
         // 2. Chủ cho thuê
         $landlords = DB::table('users')
-            ->where('role', 'lessor')
+            ->whereIn('role', ['lessor', 'admin'])
             ->count();
 
         // 3. Tổng bài đăng

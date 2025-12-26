@@ -5,6 +5,7 @@ import '../assets/style/pages/post-detail.css'
 import { api } from '@/api/axios'
 import { HeartPlus, HeartOff } from 'lucide-react';
 import ReviewTree from "@/components/ReviewTree"
+import avatar from '@/assets/images/default-avatar.png';
 
 
 // DÙNG CHUNG CHO MỌI ẢNH: string, CloudinaryFile, PostImage + file
@@ -26,7 +27,7 @@ function normalizeImageUrl(source) {
   if (source.image_url) return source.image_url
   if (source.path) return source.path
 
-  return '../src/assets/images/default-avatar.png'
+  return avatar
 }
 
 const API_BASE_URL =
@@ -389,7 +390,7 @@ export default function PostDetail() {
     post?.user?.avatar ||
     post?.user?.avatar_path ||
     post?.user?.profile_photo_url ||
-    '../src/assets/images/default-avatar.png'
+    avatar
 
   const hostPhone =
     post?.contact_phone || // ƯU TIÊN số điện thoại riêng của bài
